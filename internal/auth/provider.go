@@ -7,10 +7,10 @@ import (
 )
 
 type AuthProvider interface {
-	Login(user *core.User) error
-	Logout(user *core.User) error
+	Login(*core.User) error
+	Auth() (*core.User, error)
 }
 
 type AuthBackend interface {
-	GetAuthProvider(w http.ResponseWriter) AuthProvider
+	GetAuthProvider(http.ResponseWriter, *http.Request) AuthProvider
 }

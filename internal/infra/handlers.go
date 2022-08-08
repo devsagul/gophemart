@@ -25,9 +25,7 @@ func (app *App) registerUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	authProvider := app.authBackend.GetAuthProvider(w)
-	store := app.repository.users
-	err = action.UserRegister(data.Login, data.Password, store, authProvider)
+	err = action.UserRegister(data.Login, data.Password, app.repository.users, app.auth.GetAuthProvider(w, r))
 	switch err.(type) {
 	case *storage.ErrConflictingUserLogin:
 		w.WriteHeader(http.StatusConflict)
@@ -55,9 +53,7 @@ func (app *App) loginUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	authProvider := app.authBackend.GetAuthProvider(w)
-	store := app.repository.users
-	err = action.UserLogin(data.Login, data.Password, store, authProvider)
+	err = action.UserLogin(data.Login, data.Password, app.repository.users, app.auth.GetAuthProvider(w, r))
 	switch err.(type) {
 	case nil:
 		w.WriteHeader(http.StatusOK)
@@ -67,5 +63,23 @@ func (app *App) loginUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func (app *App) createOrder(w http.ResponseWriter, r *http.Request) {
+	_, err := app.auth.GetAuthProvider(w, r).Auth()
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if len(body) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 }

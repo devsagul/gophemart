@@ -94,7 +94,7 @@ func TestLoginUser(t *testing.T) {
 	const URL = "/app/user/login"
 	app := NewApp()
 	w := httptest.NewRecorder()
-	err := action.UserRegister("bob", "sikret", app.repository.users, app.authBackend.GetAuthProvider(w))
+	err := action.UserRegister("bob", "sikret", app.repository.users, app.auth.GetAuthProvider(w, nil))
 	if err != nil {
 		assert.FailNow(t, "could not create user")
 	}
@@ -158,7 +158,7 @@ func TestLoginUser(t *testing.T) {
 
 	t.Run("Login valid user twice", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		err = action.UserRegister("jane", "horse-correct", app.repository.users, app.authBackend.GetAuthProvider(w))
+		err = action.UserRegister("jane", "horse-correct", app.repository.users, app.auth.GetAuthProvider(w, nil))
 		if err != nil {
 			assert.FailNow(t, "could not create user")
 		}
@@ -181,4 +181,45 @@ func TestLoginUser(t *testing.T) {
 			assert.FailNow(t, "could not login user again")
 		}
 	})
+}
+
+func TestCreateOrder(t *testing.T) {
+	const URL = "/api/user/orders"
+	app := NewApp()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, URL, nil)
+	app.createOrder(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	w = httptest.NewRecorder()
+	err := action.UserRegister("bob", "sikret", app.repository.users, app.auth.GetAuthProvider(w, nil))
+	if err != nil {
+		assert.FailNow(t, "could not create user")
+	}
+	authHeader := w.Result().Header.Get("Authorization")
+	if authHeader == "" {
+		assert.FailNow(t, "authorization header is not set")
+	}
+
+	t.Run("Upload order without body", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, URL, nil)
+		req.Header.Set("Authorization", authHeader)
+		app.createOrder(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Upload order with empty body", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, URL, strings.NewReader(""))
+		req.Header.Set("Authorization", authHeader)
+		app.createOrder(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	// TODO test happy scenario
+	// TODO upload order twice
+	// TODO upload from another user
+	// TODO upload invalid order
 }
