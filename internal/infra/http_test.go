@@ -98,7 +98,7 @@ func TestLoginUser(t *testing.T) {
 	const URL = "/app/user/login"
 	app := NewApp()
 	w := httptest.NewRecorder()
-	err := action.UserRegister("bob", "sikret", app.repository.users, app.auth.GetAuthProvider(w, nil))
+	err := action.UserRegister("bob", "sikret", app.store, app.auth.GetAuthProvider(w, nil))
 	if err != nil {
 		assert.FailNow(t, "could not create user")
 	}
@@ -162,7 +162,7 @@ func TestLoginUser(t *testing.T) {
 
 	t.Run("Login valid user twice", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		err = action.UserRegister("jane", "horse-correct", app.repository.users, app.auth.GetAuthProvider(w, nil))
+		err = action.UserRegister("jane", "horse-correct", app.store, app.auth.GetAuthProvider(w, nil))
 		if err != nil {
 			assert.FailNow(t, "could not create user")
 		}
@@ -197,7 +197,7 @@ func TestCreateOrder(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
 	w = httptest.NewRecorder()
-	err := action.UserRegister("bob", "sikret", app.repository.users, app.auth.GetAuthProvider(w, nil))
+	err := action.UserRegister("bob", "sikret", app.store, app.auth.GetAuthProvider(w, nil))
 	if err != nil {
 		assert.FailNow(t, "could not create user")
 	}
@@ -240,7 +240,7 @@ func TestCreateOrder(t *testing.T) {
 
 	t.Run("Upload correct order as another user", func(t *testing.T) {
 		w = httptest.NewRecorder()
-		err := action.UserRegister("eve", "sikret", app.repository.users, app.auth.GetAuthProvider(w, nil))
+		err := action.UserRegister("eve", "sikret", app.store, app.auth.GetAuthProvider(w, nil))
 		if err != nil {
 			assert.FailNow(t, "could not create user")
 		}
@@ -275,7 +275,7 @@ func TestListOrders(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
 	w = httptest.NewRecorder()
-	err := action.UserRegister("bob", "sikret", app.repository.users, app.auth.GetAuthProvider(w, nil))
+	err := action.UserRegister("bob", "sikret", app.store, app.auth.GetAuthProvider(w, nil))
 	if err != nil {
 		assert.FailNow(t, "could not create user")
 	}
@@ -303,13 +303,13 @@ func TestListOrders(t *testing.T) {
 		time.UTC,
 	)
 
-	user, err := app.repository.users.Extract("bob")
+	user, err := app.store.ExtractUser("bob")
 	if err != nil {
 		assert.FailNow(t, "could not extract user")
 	}
 	order, err := core.NewOrder("4561261212345467", user, createdAt)
 	expected := []core.Order{*order}
-	err = app.repository.orders.Create(order)
+	err = app.store.CreateOrder(order)
 	if err != nil {
 		assert.FailNow(t, "could not create an order")
 	}
@@ -328,4 +328,28 @@ func TestListOrders(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, expected, orders)
 	})
+}
+
+func TestGetBalance(t *testing.T) {
+	const URL = "/api/user/balance/withdraw"
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, URL, nil)
+
+	app := NewApp()
+	app.createOrder(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	w = httptest.NewRecorder()
+	err := action.UserRegister("bob", "sikret", app.store, app.auth.GetAuthProvider(w, nil))
+	if err != nil {
+		assert.FailNow(t, "could not create user")
+	}
+	authHeader := w.Result().Header.Get("Authorization")
+	if authHeader == "" {
+		assert.FailNow(t, "authorization header is not set")
+	}
+
+	// get balance prior to withdrawal
+	// set user balance and get it
+	// create a withdrawal and get user balance
 }

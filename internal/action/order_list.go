@@ -5,6 +5,6 @@ import (
 	"github.com/devsagul/gophemart/internal/storage"
 )
 
-func OrderList(user *core.User, orderStorage storage.OrderStorage) ([]*core.Order, error) {
-	return orderStorage.ExtractByUser(user)
+func OrderList(user *core.User, store storage.Storage) ([]*core.Order, error) {
+	return store.ExtractOrdersByUser(user)
 }

@@ -78,7 +78,7 @@ func (provider *JwtAuthProvider) Auth() (*core.User, error) {
 
 	if claims, ok := token.Claims.(*JwtClaims); ok && token.Valid {
 		login := claims.Login
-		user, err := provider.users.Extract(login)
+		user, err := provider.store.ExtractUser(login)
 		return user, err
 	}
 
@@ -86,12 +86,12 @@ func (provider *JwtAuthProvider) Auth() (*core.User, error) {
 }
 
 type JwtAuthBackend struct {
-	users storage.UserStorage
+	store storage.Storage
 }
 
-func NewJwtAutAuthBackend(users storage.UserStorage) *JwtAuthBackend {
+func NewJwtAutAuthBackend(store storage.Storage) *JwtAuthBackend {
 	return &JwtAuthBackend{
-		users,
+		store,
 	}
 }
 

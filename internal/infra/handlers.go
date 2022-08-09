@@ -27,7 +27,7 @@ func (app *App) registerUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err = action.UserRegister(data.Login, data.Password, app.repository.users, app.auth.GetAuthProvider(w, r))
+	err = action.UserRegister(data.Login, data.Password, app.store, app.auth.GetAuthProvider(w, r))
 	switch err.(type) {
 	case *storage.ErrConflictingUserLogin:
 		w.WriteHeader(http.StatusConflict)
@@ -55,7 +55,7 @@ func (app *App) loginUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err = action.UserLogin(data.Login, data.Password, app.repository.users, app.auth.GetAuthProvider(w, r))
+	err = action.UserLogin(data.Login, data.Password, app.store, app.auth.GetAuthProvider(w, r))
 	switch err.(type) {
 	case nil:
 		w.WriteHeader(http.StatusOK)
@@ -86,7 +86,7 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderId := string(body)
-	err = action.OrderCreate(orderId, user, app.repository.orders)
+	err = action.OrderCreate(orderId, user, app.store)
 	if err == nil {
 		w.WriteHeader(http.StatusAccepted)
 		return
@@ -113,7 +113,7 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orders, err := action.OrderList(user, app.repository.orders)
+	orders, err := action.OrderList(user, app.store)
 	if len(orders) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -126,5 +126,13 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write(body)
 	if err != nil {
 		// log the error
+	}
+}
+
+func (app *App) getBalance(w http.ResponseWriter, r *http.Request) {
+	_, err := app.auth.GetAuthProvider(w, r).Auth()
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
 }

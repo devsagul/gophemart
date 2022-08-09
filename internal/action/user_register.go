@@ -6,7 +6,7 @@ import (
 	"github.com/devsagul/gophemart/internal/storage"
 )
 
-func UserRegister(username string, password string, store storage.UserStorage, authProvider auth.AuthProvider) error {
+func UserRegister(username string, password string, store storage.Storage, authProvider auth.AuthProvider) error {
 	user, err := core.NewUser(username, password)
 
 	if err != nil {
@@ -14,7 +14,7 @@ func UserRegister(username string, password string, store storage.UserStorage, a
 	}
 
 	// process uuid collission
-	err = store.Create(user)
+	err = store.CreateUser(user)
 	if err != nil {
 		return err
 	}

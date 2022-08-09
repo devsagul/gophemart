@@ -6,3 +6,8 @@ type userRegisterRequest struct {
 }
 
 type userLoginRequest userRegisterRequest
+
+type WithdrawalRequest struct {
+	Order string `json:"order"`
+	Sum   string `json:"sum"`
+}

@@ -11,8 +11,8 @@ func (*ErrInvalidPassword) Error() string {
 	return "invalid password"
 }
 
-func UserLogin(username string, password string, store storage.UserStorage, authProvider auth.AuthProvider) error {
-	user, err := store.Extract(username)
+func UserLogin(username string, password string, store storage.Storage, authProvider auth.AuthProvider) error {
+	user, err := store.ExtractUser(username)
 
 	if err != nil {
 		return err

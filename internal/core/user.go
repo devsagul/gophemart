@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -20,8 +21,8 @@ var (
 type User struct {
 	Id           uuid.UUID
 	Login        string
-	Balance      uint
 	passwordHash string
+	Balance      decimal.Decimal
 }
 
 func NewUser(login, password string) (*User, error) {
@@ -31,7 +32,7 @@ func NewUser(login, password string) (*User, error) {
 		return nil, err
 	}
 	user.Id = id
-	user.Balance = 0
+	user.Balance = decimal.Zero
 	passwordHash, err := generatePasswordHash(password)
 	if err != nil {
 		return nil, err
