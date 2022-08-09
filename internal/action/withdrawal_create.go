@@ -9,9 +9,15 @@ import (
 )
 
 func WithdrawalCreate(user *core.User, orderId string, sum decimal.Decimal, store storage.Storage) error {
-	_, err := core.NewOrder(orderId, user, time.Now())
+	timestamp := time.Now()
+	order, err := core.NewOrder(orderId, user, timestamp)
 	if err != nil {
 		return err
 	}
-	return nil
+	withdrawal, err := core.NewWithdrawal(order, sum, timestamp)
+	if err != nil {
+		return err
+	}
+	err = store.CreateWithdrawal(withdrawal, order)
+	return err
 }

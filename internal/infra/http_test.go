@@ -13,6 +13,7 @@ import (
 
 	"github.com/devsagul/gophemart/internal/action"
 	"github.com/devsagul/gophemart/internal/core"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -314,7 +315,7 @@ func TestListOrders(t *testing.T) {
 		assert.FailNow(t, "could not create an order")
 	}
 
-	t.Run("Get orderst", func(t *testing.T) {
+	t.Run("Get orders", func(t *testing.T) {
 		w = httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, URL, nil)
 		req.Header.Set("Authorization", authHeader)
@@ -333,7 +334,7 @@ func TestListOrders(t *testing.T) {
 func TestGetBalance(t *testing.T) {
 	const URL = "/api/user/balance/withdraw"
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, URL, nil)
+	req := httptest.NewRequest(http.MethodPost, URL, nil)
 
 	app := NewApp()
 	app.createOrder(w, req)
@@ -352,4 +353,69 @@ func TestGetBalance(t *testing.T) {
 	// get balance prior to withdrawal
 	// set user balance and get it
 	// create a withdrawal and get user balance
+}
+
+// create withdrawal
+
+func TestCreateWithdrawal(t *testing.T) {
+	const URL = "/api/user/withdrawals"
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, URL, nil)
+
+	app := NewApp()
+	app.createOrder(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	w = httptest.NewRecorder()
+	err := action.UserRegister("bob", "sikret", app.store, app.auth.GetAuthProvider(w, nil))
+	if err != nil {
+		assert.FailNow(t, "could not create user")
+	}
+	authHeader := w.Result().Header.Get("Authorization")
+	if authHeader == "" {
+		assert.FailNow(t, "authorization header is not set")
+	}
+
+	t.Run("list withdrawals while they are empty", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, URL, nil)
+		req.Header.Set("Authorization", authHeader)
+		app.listWithdrawals(w, req)
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+
+	user, err := app.store.ExtractUser("bob")
+	if err != nil {
+		assert.FailNow(t, "could not extract user")
+	}
+	user.Balance = decimal.New(420, 0)
+	err = app.store.PersistUser(user)
+	if err != nil {
+		assert.FailNow(t, "could not update user's balance")
+	}
+
+	order, err := core.NewOrder("4561261212345467", user, time.Now())
+	withdrawal, err := core.NewWithdrawal(order, decimal.New(13, 37), time.Now())
+	exp := []core.Withdrawal{*withdrawal}
+	expected, err := json.Marshal(exp)
+	if err != nil {
+		assert.FailNow(t, "could not mashal withdrawals")
+	}
+	err = app.store.CreateWithdrawal(withdrawal, order)
+	if err != nil {
+		assert.FailNow(t, "could not create a withdrawal")
+	}
+
+	t.Run("Create withdrawal", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, URL, nil)
+		req.Header.Set("Authorization", authHeader)
+		app.listWithdrawals(w, req)
+		body, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			assert.FailNow(t, "could not read response body")
+		}
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, expected, body)
+	})
 }

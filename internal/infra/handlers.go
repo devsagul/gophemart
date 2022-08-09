@@ -136,3 +136,39 @@ func (app *App) getBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) {
+	_, err := app.auth.GetAuthProvider(w, r).Auth()
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+}
+
+func (app *App) listWithdrawals(w http.ResponseWriter, r *http.Request) {
+	user, err := app.auth.GetAuthProvider(w, r).Auth()
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	withdrawals, err := action.WithdrawalList(user, app.store)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if len(withdrawals) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	body, err := json.Marshal(withdrawals)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(body)
+	if err != nil {
+		// log error
+	}
+}

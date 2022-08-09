@@ -16,7 +16,11 @@ type Storage interface {
 	ExtractOrdersByUser(*core.User) ([]*core.Order, error)
 	// users
 	CreateUser(*core.User) error
-	ExtractUser(login string) (*core.User, error)
+	ExtractUser(string) (*core.User, error)
+	PersistUser(*core.User) error
+	// withdrawals
+	CreateWithdrawal(*core.Withdrawal, *core.Order) error
+	ExtractWithdrawalsByUser(*core.User) ([]*core.Withdrawal, error)
 }
 
 // errors
@@ -54,3 +58,6 @@ type ErrConflictingUserLogin struct {
 func (err *ErrConflictingUserLogin) Error() string {
 	return fmt.Sprintf("conflicting user login %s", err.login)
 }
+
+// withdrawals
+// TODO not enough cash
