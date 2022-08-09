@@ -218,8 +218,45 @@ func TestCreateOrder(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	// TODO test happy scenario
-	// TODO upload order twice
-	// TODO upload from another user
-	// TODO upload invalid order
+	t.Run("Upload corect order", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, URL, strings.NewReader("4561261212345467"))
+		req.Header.Set("Authorization", authHeader)
+		app.createOrder(w, req)
+		assert.Equal(t, http.StatusAccepted, w.Code)
+	})
+
+	t.Run("Upload correct order second time", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, URL, strings.NewReader("4561261212345467"))
+		req.Header.Set("Authorization", authHeader)
+		app.createOrder(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("Upload correct order as another user", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		err := action.UserRegister("eve", "sikret", app.repository.users, app.auth.GetAuthProvider(w, nil))
+		if err != nil {
+			assert.FailNow(t, "could not create user")
+		}
+		authHeader := w.Result().Header.Get("Authorization")
+		if authHeader == "" {
+			assert.FailNow(t, "authorization header is not set")
+		}
+
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, URL, strings.NewReader("4561261212345467"))
+		req.Header.Set("Authorization", authHeader)
+		app.createOrder(w, req)
+		assert.Equal(t, http.StatusConflict, w.Code)
+	})
+
+	t.Run("Upload incorrect order second time", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, URL, strings.NewReader("4561261212345468"))
+		req.Header.Set("Authorization", authHeader)
+		app.createOrder(w, req)
+		assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	})
 }

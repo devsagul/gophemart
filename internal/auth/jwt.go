@@ -12,8 +12,9 @@ import (
 )
 
 type JwtClaims struct {
-	exp   time.Time
-	login string
+	// TODO use user id instead of login
+	Login string
+	jwt.StandardClaims
 }
 
 var ErrExpiredToken = errors.New("expired token")
@@ -21,7 +22,7 @@ var ErrNoToken = errors.New("no token provided")
 var ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
 
 func (claims JwtClaims) Valid() error {
-	if claims.exp.After(time.Now()) {
+	if !claims.VerifyExpiresAt(time.Now().Unix(), true) {
 		return ErrExpiredToken
 	}
 	return nil
@@ -40,8 +41,10 @@ func (provider *JwtAuthProvider) Login(user *core.User) error {
 	expiration := now.Add(time.Duration(3 * time.Hour))
 
 	claims := JwtClaims{
-		exp:   expiration,
-		login: user.Login,
+		user.Login,
+		jwt.StandardClaims{
+			ExpiresAt: expiration.Unix(),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -73,8 +76,8 @@ func (provider *JwtAuthProvider) Auth() (*core.User, error) {
 		return []byte("sikret key"), nil
 	})
 
-	if claims, ok := token.Claims.(JwtClaims); ok && token.Valid {
-		login := claims.login
+	if claims, ok := token.Claims.(*JwtClaims); ok && token.Valid {
+		login := claims.Login
 		user, err := provider.users.Extract(login)
 		return user, err
 	}

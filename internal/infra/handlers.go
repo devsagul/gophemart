@@ -2,10 +2,12 @@ package infra
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/devsagul/gophemart/internal/action"
+	"github.com/devsagul/gophemart/internal/core"
 	"github.com/devsagul/gophemart/internal/storage"
 )
 
@@ -67,7 +69,7 @@ func (app *App) loginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) createOrder(w http.ResponseWriter, r *http.Request) {
-	_, err := app.auth.GetAuthProvider(w, r).Auth()
+	user, err := app.auth.GetAuthProvider(w, r).Auth()
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -82,4 +84,24 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	orderId := string(body)
+	err = action.OrderCreate(orderId, user, app.repository.orders)
+	if err == nil {
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+	if errors.Is(err, storage.ErrOrderExitst) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if errors.Is(err, storage.ErrOrderIdCollision) {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+	if errors.Is(err, core.ERR_INVALID_ORDER) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
 }

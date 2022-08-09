@@ -9,6 +9,7 @@ import (
 type UserStorage interface {
 	Create(user *core.User) error
 	Extract(login string) (*core.User, error)
+	// TODO add extract by id
 }
 
 type ErrUserNotFound struct {
