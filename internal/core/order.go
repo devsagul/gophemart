@@ -22,6 +22,7 @@ var ERR_INVALID_ORDER = errors.New("invalid order id")
 var ErrUserNotSupplied = errors.New("no user supplied")
 
 type Order struct {
+	// todo add json tags
 	Id         string
 	Status     OrderStatus
 	UploadedAt time.Time

@@ -2,13 +2,17 @@ package infra
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/devsagul/gophemart/internal/action"
+	"github.com/devsagul/gophemart/internal/core"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -258,5 +262,70 @@ func TestCreateOrder(t *testing.T) {
 		req.Header.Set("Authorization", authHeader)
 		app.createOrder(w, req)
 		assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	})
+}
+
+func TestListOrders(t *testing.T) {
+	const URL = "/api/user/orders"
+	app := NewApp()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, URL, nil)
+	app.createOrder(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	w = httptest.NewRecorder()
+	err := action.UserRegister("bob", "sikret", app.repository.users, app.auth.GetAuthProvider(w, nil))
+	if err != nil {
+		assert.FailNow(t, "could not create user")
+	}
+	authHeader := w.Result().Header.Get("Authorization")
+	if authHeader == "" {
+		assert.FailNow(t, "authorization header is not set")
+	}
+
+	t.Run("Get orders while orders are not present", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, URL, nil)
+		req.Header.Set("Authorization", authHeader)
+		app.listOrders(w, req)
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+
+	createdAt := time.Date(
+		2022,
+		time.August,
+		9,
+		21,
+		40,
+		0,
+		0,
+		time.UTC,
+	)
+
+	user, err := app.repository.users.Extract("bob")
+	if err != nil {
+		assert.FailNow(t, "could not extract user")
+	}
+	order, err := core.NewOrder("4561261212345467", user, createdAt)
+	expected := []core.Order{*order}
+	err = app.repository.orders.Create(order)
+	if err != nil {
+		assert.FailNow(t, "could not create an order")
+	}
+
+	t.Run("Get orderst", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, URL, nil)
+		req.Header.Set("Authorization", authHeader)
+		app.listOrders(w, req)
+		var orders []core.Order
+		body, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			assert.FailNow(t, "could not read response body")
+		}
+		json.Unmarshal(body, &orders)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, expected, orders)
 	})
 }

@@ -11,4 +11,5 @@ var ErrOrderIdCollision = errors.New("order with given id exists already for oth
 
 type OrderStorage interface {
 	Create(*core.Order) error
+	ExtractByUser(*core.User) ([]*core.Order, error)
 }

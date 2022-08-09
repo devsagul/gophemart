@@ -105,3 +105,26 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusInternalServerError)
 }
+
+func (app *App) listOrders(w http.ResponseWriter, r *http.Request) {
+	user, err := app.auth.GetAuthProvider(w, r).Auth()
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	orders, err := action.OrderList(user, app.repository.orders)
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	body, err := json.Marshal(orders)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = w.Write(body)
+	if err != nil {
+		// log the error
+	}
+}
