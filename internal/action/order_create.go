@@ -1,7 +1,8 @@
 package action
 
+// TOOD delete this layer completely
+
 import (
-	"log"
 	"time"
 
 	"github.com/devsagul/gophemart/internal/core"
@@ -11,7 +12,6 @@ import (
 func OrderCreate(orderId string, user *core.User, store storage.Storage) error {
 	order, err := core.NewOrder(orderId, user, time.Now())
 	if err != nil {
-		log.Printf("%v", err)
 		return err
 	}
 	err = store.CreateOrder(order)

@@ -9,6 +9,7 @@ import (
 	"github.com/devsagul/gophemart/internal/action"
 	"github.com/devsagul/gophemart/internal/core"
 	"github.com/devsagul/gophemart/internal/storage"
+	"github.com/shopspring/decimal"
 )
 
 func (app *App) registerUser(w http.ResponseWriter, r *http.Request) {
@@ -130,17 +131,73 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) getBalance(w http.ResponseWriter, r *http.Request) {
-	_, err := app.auth.GetAuthProvider(w, r).Auth()
+	user, err := app.auth.GetAuthProvider(w, r).Auth()
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	type balanceResponse struct {
+		Current   decimal.Decimal `json:"current"`
+		Withdrawn int             `json:"withdrawn"`
+	}
+
+	withdrawals, err := action.WithdrawalList(user, app.store)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data := balanceResponse{
+		user.Balance,
+		len(withdrawals),
+	}
+
+	body, err := json.Marshal(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = w.Write(body)
+	if err != nil {
+		// log the error
+	}
 }
 
 func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) {
-	_, err := app.auth.GetAuthProvider(w, r).Auth()
+	user, err := app.auth.GetAuthProvider(w, r).Auth()
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var data WithdrawalRequest
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = action.WithdrawalCreate(user, data.Order, data.Sum, app.store)
+	switch err.(type) {
+	case nil:
+		w.WriteHeader(http.StatusOK)
+		return
+	case *storage.ErrBalanceExceeded:
+		w.WriteHeader(http.StatusPaymentRequired)
+		return
+	default:
+		if err == core.ERR_INVALID_ORDER {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }

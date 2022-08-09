@@ -112,7 +112,7 @@ func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *co
 		// could not connect user
 	}
 	if user.Balance.LessThan(withdrawal.Sum) {
-		// not enough money
+		return &ErrBalanceExceeded{}
 	}
 	store.orders[order.Id] = *order
 	store.withdrawals[withdrawal.Id] = *withdrawal

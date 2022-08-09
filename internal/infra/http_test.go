@@ -17,6 +17,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO refactor tests
+// TODO rewrite test using testserver
+
 type testCase struct {
 	name         string
 	body         string
@@ -56,7 +59,8 @@ func TestRegisterUser(t *testing.T) {
 	for _, tCase := range testcases {
 		t.Run(tCase.name, func(t *testing.T) {
 			app := NewApp()
-			body := strings.NewReader(tCase.body)
+			var body io.Reader
+			body = strings.NewReader(tCase.body)
 			req := httptest.NewRequest(http.MethodPost, URL, body)
 			w := httptest.NewRecorder()
 			app.registerUser(w, req)
@@ -350,14 +354,75 @@ func TestGetBalance(t *testing.T) {
 		assert.FailNow(t, "authorization header is not set")
 	}
 
-	// get balance prior to withdrawal
-	// set user balance and get it
-	// create a withdrawal and get user balance
+	t.Run("Withdrawal on zero balance", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, URL, nil)
+		req.Header.Set("Authorization", authHeader)
+		app.getBalance(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
 }
 
-// create withdrawal
-
 func TestCreateWithdrawal(t *testing.T) {
+	const URL = "/api/user/withdrawals"
+	const METHOD = http.MethodPost
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(METHOD, URL, nil)
+
+	app := NewApp()
+	app.createOrder(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	w = httptest.NewRecorder()
+	err := action.UserRegister("bob", "sikret", app.store, app.auth.GetAuthProvider(w, nil))
+	if err != nil {
+		assert.FailNow(t, "could not create user")
+	}
+	authHeader := w.Result().Header.Get("Authorization")
+	if authHeader == "" {
+		assert.FailNow(t, "authorization header is not set")
+	}
+
+	t.Run("Withdrawal on zero balance", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		body := strings.NewReader("{\"order\": \"2377225624\", \"sum\": 42}")
+		req := httptest.NewRequest(METHOD, URL, body)
+		req.Header.Set("Authorization", authHeader)
+		app.createWithdrawal(w, req)
+		assert.Equal(t, http.StatusPaymentRequired, w.Code)
+	})
+
+	t.Run("Withdrawal with invalid order id", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		body := strings.NewReader("{\"order\": \"2377225623\", \"sum\": 42}")
+		req := httptest.NewRequest(METHOD, URL, body)
+		req.Header.Set("Authorization", authHeader)
+		app.createWithdrawal(w, req)
+		assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	})
+
+	user, err := app.store.ExtractUser("bob")
+	if err != nil {
+		assert.FailNow(t, "could not extract user")
+	}
+	user.Balance = decimal.New(420, 0)
+	err = app.store.PersistUser(user)
+	if err != nil {
+		assert.FailNow(t, "could not update user's balance")
+	}
+
+	t.Run("Valid withdrawal", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		body := strings.NewReader("{\"order\": \"2377225624\", \"sum\": 42}")
+		req := httptest.NewRequest(METHOD, URL, body)
+		req.Header.Set("Authorization", authHeader)
+		app.createWithdrawal(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+}
+
+func TestListWithdrawal(t *testing.T) {
 	const URL = "/api/user/withdrawals"
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, URL, nil)
@@ -395,7 +460,7 @@ func TestCreateWithdrawal(t *testing.T) {
 	}
 
 	order, err := core.NewOrder("4561261212345467", user, time.Now())
-	withdrawal, err := core.NewWithdrawal(order, decimal.New(13, 37), time.Now())
+	withdrawal, err := core.NewWithdrawal(order, decimal.New(1337, -2), time.Now())
 	exp := []core.Withdrawal{*withdrawal}
 	expected, err := json.Marshal(exp)
 	if err != nil {

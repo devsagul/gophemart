@@ -10,6 +10,8 @@ import (
 var ErrOrderExitst = errors.New("order with given id exists already for current user")
 var ErrOrderIdCollision = errors.New("order with given id exists already for other user")
 
+// todo refactor considering transactions
+
 type Storage interface {
 	// orders
 	CreateOrder(*core.Order) error
@@ -60,4 +62,8 @@ func (err *ErrConflictingUserLogin) Error() string {
 }
 
 // withdrawals
-// TODO not enough cash
+type ErrBalanceExceeded struct{}
+
+func (err *ErrBalanceExceeded) Error() string {
+	return "requested withdrawal amount exceeds user's balance"
+}
