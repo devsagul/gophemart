@@ -1,18 +1,80 @@
 package storage
 
 import (
+	"errors"
+	"math/rand"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/devsagul/gophemart/internal/core"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type memStorage struct {
 	sync.RWMutex
+	// todo extract types
+	keys        map[uuid.UUID]core.HmacKey
 	orders      map[string]core.Order
 	users       map[string]core.User
 	withdrawals map[uuid.UUID]core.Withdrawal
+}
+
+func (store *memStorage) CreateKey(key *core.HmacKey) error {
+	store.Lock()
+	defer store.Unlock()
+
+	store.keys[key.Id] = *key
+	return nil
+}
+
+func (store *memStorage) ExtractKey(id uuid.UUID) (*core.HmacKey, error) {
+	store.RLock()
+	defer store.RUnlock()
+
+	key, found := store.keys[id]
+	if !found || key.Expired() {
+		return nil, &ErrKeyNotFound{id}
+	}
+	return &key, nil
+}
+
+func (store *memStorage) ExtractRandomKey() (*core.HmacKey, error) {
+	store.RLock()
+	defer store.RUnlock()
+
+	keys := []*core.HmacKey{}
+
+	for _, key := range store.keys {
+		key := key
+		if key.Fresh() {
+			keys = append(keys, &key)
+		}
+	}
+
+	if len(keys) == 0 {
+		return nil, &ErrNoKeys{}
+	}
+
+	s := rand.NewSource(time.Now().Unix())
+	r := rand.New(s)
+	i := r.Intn(len(keys))
+
+	return keys[i], nil
+}
+
+func (store *memStorage) ExtractAllKeys() (map[uuid.UUID]core.HmacKey, error) {
+	store.RLock()
+	defer store.RUnlock()
+
+	keys := make(map[uuid.UUID]core.HmacKey)
+
+	for _, key := range store.keys {
+		keys[key.Id] = key
+	}
+
+	return keys, nil
 }
 
 func (store *memStorage) CreateOrder(order *core.Order) error {
@@ -25,9 +87,9 @@ func (store *memStorage) CreateOrder(order *core.Order) error {
 	prev, found := store.orders[orderId]
 	if found {
 		if prev.UserId == userId {
-			return ErrOrderExitst
+			return &ErrOrderExists{orderId}
 		}
-		return ErrOrderIdCollision
+		return &ErrOrderIdCollission{orderId}
 	}
 	store.orders[orderId] = *order
 	return nil
@@ -41,6 +103,7 @@ func (store *memStorage) ExtractOrdersByUser(user *core.User) ([]*core.Order, er
 	store.RLock()
 	defer store.RUnlock()
 	for _, order := range store.orders {
+		order := order
 		if order.UserId == userId {
 			res = append(res, &order)
 		}
@@ -79,6 +142,26 @@ func (store *memStorage) ExtractUser(login string) (*core.User, error) {
 	return &user, nil
 }
 
+func (store *memStorage) ExtractUserById(id uuid.UUID) (*core.User, error) {
+	store.RLock()
+	defer store.RUnlock()
+
+	var user *core.User = nil
+	for _, u := range store.users {
+		u := u
+		if u.Id == id {
+			user = &u
+			break
+		}
+	}
+
+	if user == nil {
+		return nil, &ErrUserNotFoundById{id}
+	}
+
+	return user, nil
+}
+
 func (store *memStorage) PersistUser(user *core.User) error {
 	store.Lock()
 	defer store.Unlock()
@@ -87,19 +170,18 @@ func (store *memStorage) PersistUser(user *core.User) error {
 	return nil
 }
 
-func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *core.Order) error {
+func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal) error {
 	store.Lock()
 	defer store.Unlock()
-	userId := order.UserId
-	orderId := order.Id
+	orderId := withdrawal.OrderId
 
-	prev, found := store.orders[orderId]
-	if found {
-		if prev.UserId == userId {
-			return ErrOrderExitst
-		}
-		return ErrOrderIdCollision
+	order, found := store.orders[orderId]
+	if !found {
+		// todo new error type
+		return errors.New("generic order error")
 	}
+
+	userId := order.UserId
 
 	var user *core.User = nil
 	for _, u := range store.users {
@@ -109,13 +191,17 @@ func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *co
 		}
 	}
 	if user == nil {
-		// could not connect user
+		// todo new error type
+		return errors.New("generic user error")
 	}
+
 	if user.Balance.LessThan(withdrawal.Sum) {
 		return &ErrBalanceExceeded{}
 	}
-	store.orders[order.Id] = *order
+	user.Balance = user.Balance.Sub(withdrawal.Sum)
+
 	store.withdrawals[withdrawal.Id] = *withdrawal
+	store.users[user.Login] = *user
 	return nil
 }
 
@@ -133,6 +219,7 @@ func (store *memStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core.With
 	}
 
 	for _, withdrawal := range store.withdrawals {
+		withdrawal := withdrawal
 		orderId := withdrawal.OrderId
 		_, found := userOrders[orderId]
 		if found {
@@ -140,11 +227,35 @@ func (store *memStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core.With
 		}
 	}
 
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].ProcessedAt.Before(res[j].ProcessedAt)
+	})
+
 	return res, nil
+}
+
+func (store *memStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, error) {
+	store.RLock()
+	defer store.RUnlock()
+
+	withdrawn := decimal.Zero
+	for _, withdrawal := range store.withdrawals {
+		orderId := withdrawal.OrderId
+		order, found := store.orders[orderId]
+		if !found {
+			return decimal.Zero, errors.New("no order found")
+		}
+		if order.UserId == user.Id {
+			withdrawn = withdrawn.Add(withdrawal.Sum)
+		}
+	}
+
+	return withdrawn, nil
 }
 
 func NewMemStorage() Storage {
 	store := new(memStorage)
+	store.keys = make(map[uuid.UUID]core.HmacKey)
 	store.orders = make(map[string]core.Order)
 	store.users = make(map[string]core.User)
 	store.withdrawals = make(map[uuid.UUID]core.Withdrawal)

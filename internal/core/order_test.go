@@ -8,6 +8,7 @@ import (
 )
 
 func TestOrder(t *testing.T) {
+	t.Parallel()
 	user, err := NewUser("Alice", "sikret")
 	if err != nil {
 		assert.FailNow(t, "Unable to instantiate user")

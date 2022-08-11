@@ -8,11 +8,10 @@ import (
 )
 
 type Withdrawal struct {
-	// todo add json tags
-	Id          uuid.UUID
-	OrderId     string
-	Sum         decimal.Decimal
-	ProcessedAt time.Time
+	Id          uuid.UUID       `json:"-"`
+	OrderId     string          `json:"order"`
+	Sum         decimal.Decimal `json:"sum"`
+	ProcessedAt time.Time       `json:"processed_at"`
 }
 
 func NewWithdrawal(order *Order, sum decimal.Decimal, processedAt time.Time) (*Withdrawal, error) {

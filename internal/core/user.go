@@ -1,13 +1,13 @@
 package core
 
 import (
-	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/devsagul/gophemart/internal/utils"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"golang.org/x/crypto/argon2"
@@ -71,15 +71,6 @@ type passwordHash struct {
 	hash []byte
 }
 
-func generateRandomBytes(n uint32) ([]byte, error) {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
-	return b, nil
-}
-
 func generatePasswordHash(pasword string) (string, error) {
 	p := &passwordGenerationParams{
 		64 * 1024,
@@ -89,7 +80,7 @@ func generatePasswordHash(pasword string) (string, error) {
 		32,
 	}
 
-	salt, err := generateRandomBytes(p.saltLenghth)
+	salt, err := utils.GenerateRandomBytes(p.saltLenghth)
 	if err != nil {
 		return "", nil
 	}

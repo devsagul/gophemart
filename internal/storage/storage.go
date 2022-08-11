@@ -1,31 +1,52 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/devsagul/gophemart/internal/core"
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
-var ErrOrderExitst = errors.New("order with given id exists already for current user")
-var ErrOrderIdCollision = errors.New("order with given id exists already for other user")
-
 // todo refactor considering transactions
+// todo introduce sql in-memory
 
 type Storage interface {
+	// auth
+	CreateKey(*core.HmacKey) error
+	ExtractKey(uuid.UUID) (*core.HmacKey, error)
+	ExtractRandomKey() (*core.HmacKey, error)
+	ExtractAllKeys() (map[uuid.UUID]core.HmacKey, error)
 	// orders
 	CreateOrder(*core.Order) error
 	ExtractOrdersByUser(*core.User) ([]*core.Order, error)
 	// users
 	CreateUser(*core.User) error
 	ExtractUser(string) (*core.User, error)
+	ExtractUserById(uuid.UUID) (*core.User, error)
 	PersistUser(*core.User) error
 	// withdrawals
-	CreateWithdrawal(*core.Withdrawal, *core.Order) error
+	CreateWithdrawal(*core.Withdrawal) error
 	ExtractWithdrawalsByUser(*core.User) ([]*core.Withdrawal, error)
+	TotalWithdrawnSum(*core.User) (decimal.Decimal, error)
 }
 
 // errors
+
+// auth
+type ErrKeyNotFound struct {
+	keyId uuid.UUID
+}
+
+func (err *ErrKeyNotFound) Error() string {
+	return fmt.Sprintf("active key with id %s not found", err.keyId)
+}
+
+type ErrNoKeys struct{}
+
+func (err *ErrNoKeys) Error() string {
+	return "there are no active keys in storage"
+}
 
 // order
 type ErrOrderExists struct {
@@ -51,6 +72,14 @@ type ErrUserNotFound struct {
 
 func (err *ErrUserNotFound) Error() string {
 	return fmt.Sprintf("could not find user with login %s", err.login)
+}
+
+type ErrUserNotFoundById struct {
+	id uuid.UUID
+}
+
+func (err *ErrUserNotFoundById) Error() string {
+	return fmt.Sprintf("could not find user with id %s", err.id)
 }
 
 type ErrConflictingUserLogin struct {

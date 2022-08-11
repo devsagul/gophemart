@@ -9,33 +9,27 @@ import (
 	"github.com/google/uuid"
 )
 
-type OrderStatus int
+type OrderStatus = string
 
 const (
-	NEW = OrderStatus(iota + 1)
-	PROCESSING
-	INVALID
-	PROCESSED
+	NEW        = "NEW"
+	PROCESSING = "PROCESSING"
+	INVALID    = "INVALID"
+	PROCESSED  = "PROCESSED"
 )
 
 var ERR_INVALID_ORDER = errors.New("invalid order id")
-var ErrUserNotSupplied = errors.New("no user supplied")
 
 type Order struct {
-	// todo add json tags
-	Id         string
-	Status     OrderStatus
-	UploadedAt time.Time
-	UserId     uuid.UUID
+	Id         string      `json:"number"`
+	Status     OrderStatus `json:"status"`
+	UploadedAt time.Time   `json:"uploaded_at"`
+	UserId     uuid.UUID   `json:"-"`
 }
 
 func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
 	if len(id) == 0 {
 		return nil, ERR_INVALID_ORDER
-	}
-
-	if user == nil {
-		return nil, ErrUserNotSupplied
 	}
 
 	sum := 0

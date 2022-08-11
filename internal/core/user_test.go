@@ -7,6 +7,7 @@ import (
 )
 
 func TestUser(t *testing.T) {
+	t.Parallel()
 	t.Run("create a user and check their password", func(t *testing.T) {
 		user, err := NewUser("alice", "sikret")
 		if err != nil {
@@ -25,5 +26,4 @@ func TestUser(t *testing.T) {
 		}
 		assert.False(t, valid)
 	})
-	// set unusable password
 }
