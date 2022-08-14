@@ -61,10 +61,14 @@ func main() {
 				log.Printf("Error while extracting unterminated orders: %v", err)
 				continue
 			}
+
+			log.Printf("Collected %d orders", len(orders))
+
 			for _, order := range orders {
+
+				log.Printf("Adding order to process: %s", order.Id)
 				select {
 				case accrualStream <- order:
-					log.Printf("Adding order to process: %s", order.Id)
 				default:
 				}
 			}
