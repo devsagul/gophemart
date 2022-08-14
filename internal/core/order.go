@@ -26,7 +26,7 @@ type Order struct {
 	Status     OrderStatus     `json:"status"`
 	UploadedAt time.Time       `json:"uploaded_at"`
 	UserId     uuid.UUID       `json:"-"`
-	Accrual    decimal.Decimal `json:"accrual,omitempty"`
+	Accrual    decimal.Decimal `json:"accrual,omitzero"`
 }
 
 func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {

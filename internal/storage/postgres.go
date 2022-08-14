@@ -166,7 +166,7 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 	userId := user.Id
 	orders := []*core.Order{}
 
-	query, err := store.db.Prepare("SELECT id, status, user_id, uploaded_at from app_order WHERE user_id = $1")
+	query, err := store.db.Prepare("SELECT id, status, user_id, uploaded_at, accrual from app_order WHERE user_id = $1")
 
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 	for rows.Next() {
 
 		var order core.Order
-		err = rows.Scan(&order.Id, &order.Status, &order.UserId, &order.UploadedAt)
+		err = rows.Scan(&order.Id, &order.Status, &order.UserId, &order.UploadedAt, &order.Accrual)
 		if err != nil {
 			return nil, err
 		}
