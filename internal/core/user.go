@@ -21,7 +21,7 @@ var (
 type User struct {
 	Id           uuid.UUID
 	Login        string
-	passwordHash string
+	PasswordHash string
 	Balance      decimal.Decimal
 }
 
@@ -38,12 +38,12 @@ func NewUser(login, password string) (*User, error) {
 		return nil, err
 	}
 	user.Login = login
-	user.passwordHash = passwordHash
+	user.PasswordHash = passwordHash
 	return user, nil
 }
 
 func (user *User) ValidatePassword(password string) (bool, error) {
-	decodedHash, err := decodeHash(user.passwordHash)
+	decodedHash, err := decodeHash(user.PasswordHash)
 	if err != nil {
 		return false, err
 	}

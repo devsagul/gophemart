@@ -11,28 +11,93 @@ import (
 	"time"
 
 	"github.com/devsagul/gophemart/internal/core"
+	"github.com/devsagul/gophemart/internal/storage"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO refactor tests
-// TODO fixtures
+// fixtures
 
+func app(t *testing.T) (*App, *httptest.Server) {
+	assert := assert.New(t)
+
+	store := storage.NewMemStorage()
+
+	app := NewApp(store)
+
+	server := httptest.NewServer(app.Router)
+	err := app.HydrateKeys()
+	if !assert.NoError(err) {
+		assert.FailNow("could not setup application")
+	}
+	return app, server
+}
+
+func alice(t *testing.T, app *App) (*core.User, string) {
+	assert := assert.New(t)
+
+	alice, err := core.NewUser("alice", "correct-horse")
+	if !assert.NoError(err) {
+		assert.FailNow("could not create alice")
+	}
+	alice.Balance = decimal.New(1337, -2)
+	err = app.store.CreateUser(alice)
+	if !assert.NoError(err) {
+		assert.FailNow("could not persist alice")
+	}
+
+	key, err := app.store.ExtractRandomKey()
+	if !assert.NoError(err) {
+		assert.FailNow("could not extract hmac key")
+	}
+
+	tokenAlice, err := core.GenerateToken(alice, key)
+	if !assert.NoError(err) {
+		assert.FailNow("could not generate token for alice")
+	}
+
+	authorizationHeaderAlice := fmt.Sprintf("Bearer %s", tokenAlice)
+	return alice, authorizationHeaderAlice
+}
+
+func bob(t *testing.T, app *App) (*core.User, string) {
+	assert := assert.New(t)
+
+	bob, err := core.NewUser("bob", "sikret")
+	if !assert.NoError(err) {
+		assert.FailNow("could not create bob")
+	}
+	bob.Balance = decimal.New(420, 0)
+	err = app.store.CreateUser(bob)
+	if !assert.NoError(err) {
+		assert.FailNow("could not persist bob")
+	}
+
+	key, err := app.store.ExtractRandomKey()
+	if !assert.NoError(err) {
+		assert.FailNow("could not extract hmac key")
+	}
+
+	tokenBob, err := core.GenerateToken(bob, key)
+	if !assert.NoError(err) {
+		assert.FailNow("could not generate token for bob")
+	}
+
+	authorizationHeaderBob := fmt.Sprintf("Bearer %s", tokenBob)
+	return bob, authorizationHeaderBob
+}
+
+// tests
 func TestRegisterUser(t *testing.T) {
 	t.Parallel()
 
 	const ENDPOINT = "/api/user/register"
 	const CONTENT_TYPE = "application/json"
 
-	app := NewApp()
-	server := httptest.NewServer(app.Router)
+	_, server := app(t)
 	defer server.Close()
-	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
 
-	err := app.HydrateKeys()
-	if !assert.NoError(t, err) {
-		return
-	}
+	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
 
 	type testCase struct {
 		name         string
@@ -124,8 +189,8 @@ func TestLoginUser(t *testing.T) {
 	const ENDPOINT = "/api/user/login"
 	const CONTENT_TYPE = "application/json"
 
-	app := NewApp()
-	server := httptest.NewServer(app.Router)
+	app, server := app(t)
+
 	defer server.Close()
 	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
 
@@ -134,11 +199,6 @@ func TestLoginUser(t *testing.T) {
 		return
 	}
 	err = app.store.CreateUser(user)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = app.HydrateKeys()
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -249,52 +309,13 @@ func TestCreateOrder(t *testing.T) {
 	const CONTENT_TYPE = "text/plain"
 	const METHOD = http.MethodPost
 
-	app := NewApp()
-	server := httptest.NewServer(app.Router)
+	app, server := app(t)
+
 	defer server.Close()
 	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
 
-	alice, err := core.NewUser("alice", "correct-horse")
-	if !assert.NoError(t, err) {
-		return
-	}
-	err = app.store.CreateUser(alice)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = app.HydrateKeys()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	key, err := app.store.ExtractRandomKey()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenAlice, err := core.GenerateToken(alice, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderAlice := fmt.Sprintf("Bearer %s", tokenAlice)
-
-	bob, err := core.NewUser("bob", "sikret")
-	if !assert.NoError(t, err) {
-		return
-	}
-	err = app.store.CreateUser(bob)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenBob, err := core.GenerateToken(bob, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderBob := fmt.Sprintf("Bearer %s", tokenBob)
+	_, authorizationHeaderAlice := alice(t, app)
+	_, authorizationHeaderBob := bob(t, app)
 
 	client := http.Client{}
 
@@ -391,52 +412,13 @@ func TestListOrders(t *testing.T) {
 	const ENDPOINT = "/api/user/orders"
 	const METHOD = http.MethodGet
 
-	app := NewApp()
-	server := httptest.NewServer(app.Router)
+	app, server := app(t)
+
 	defer server.Close()
 	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
 
-	alice, err := core.NewUser("alice", "correct-horse")
-	if !assert.NoError(t, err) {
-		return
-	}
-	err = app.store.CreateUser(alice)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = app.HydrateKeys()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	key, err := app.store.ExtractRandomKey()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenAlice, err := core.GenerateToken(alice, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderAlice := fmt.Sprintf("Bearer %s", tokenAlice)
-
-	bob, err := core.NewUser("bob", "sikret")
-	if !assert.NoError(t, err) {
-		return
-	}
-	err = app.store.CreateUser(bob)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenBob, err := core.GenerateToken(bob, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderBob := fmt.Sprintf("Bearer %s", tokenBob)
+	_, authorizationHeaderAlice := alice(t, app)
+	bob, authorizationHeaderBob := bob(t, app)
 
 	secondsEastOfUTC := int((3 * time.Hour).Seconds())
 	moscow := time.FixedZone("Moscow Time", secondsEastOfUTC)
@@ -551,57 +533,18 @@ func TestListOrders(t *testing.T) {
 }
 
 func TestGetBalance(t *testing.T) {
+	t.Parallel()
+
 	const ENDPOINT = "/api/user/balance"
 	const METHOD = http.MethodGet
 
-	app := NewApp()
-	server := httptest.NewServer(app.Router)
+	app, server := app(t)
+
 	defer server.Close()
 	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
 
-	alice, err := core.NewUser("alice", "correct-horse")
-	if !assert.NoError(t, err) {
-		return
-	}
-	alice.Balance = decimal.New(1337, -2)
-	err = app.store.CreateUser(alice)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = app.HydrateKeys()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	key, err := app.store.ExtractRandomKey()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenAlice, err := core.GenerateToken(alice, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderAlice := fmt.Sprintf("Bearer %s", tokenAlice)
-
-	bob, err := core.NewUser("bob", "sikret")
-	if !assert.NoError(t, err) {
-		return
-	}
-	bob.Balance = decimal.New(420, 0)
-	err = app.store.CreateUser(bob)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenBob, err := core.GenerateToken(bob, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderBob := fmt.Sprintf("Bearer %s", tokenBob)
+	_, authorizationHeaderAlice := alice(t, app)
+	bob, authorizationHeaderBob := bob(t, app)
 
 	secondsEastOfUTC := int((3 * time.Hour).Seconds())
 	moscow := time.FixedZone("Moscow Time", secondsEastOfUTC)
@@ -623,8 +566,6 @@ func TestGetBalance(t *testing.T) {
 		return
 	}
 
-	err = app.store.CreateOrder(order)
-
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -645,7 +586,7 @@ func TestGetBalance(t *testing.T) {
 		return
 	}
 
-	err = app.store.CreateWithdrawal(withdrawal)
+	err = app.store.CreateWithdrawal(withdrawal, order)
 
 	if !assert.NoError(t, err) {
 		return
@@ -677,7 +618,7 @@ func TestGetBalance(t *testing.T) {
 			"{\"current\": 13.37, \"withdrawn\": 0}",
 		},
 		{
-			"Get balance unauthorized",
+			"Get balance with withdrawals",
 			authorizationHeaderBob,
 			http.StatusOK,
 			true,
@@ -720,54 +661,13 @@ func TestCreateWithdrawal(t *testing.T) {
 	const ENDPOINT = "/api/user/balance/withdraw"
 	const METHOD = http.MethodPost
 
-	app := NewApp()
-	server := httptest.NewServer(app.Router)
+	app, server := app(t)
+
 	defer server.Close()
 	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
 
-	alice, err := core.NewUser("alice", "correct-horse")
-	if !assert.NoError(t, err) {
-		return
-	}
-	alice.Balance = decimal.New(1337, -2)
-	err = app.store.CreateUser(alice)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = app.HydrateKeys()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	key, err := app.store.ExtractRandomKey()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenAlice, err := core.GenerateToken(alice, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderAlice := fmt.Sprintf("Bearer %s", tokenAlice)
-
-	bob, err := core.NewUser("bob", "sikret")
-	if !assert.NoError(t, err) {
-		return
-	}
-	bob.Balance = decimal.New(420, 0)
-	err = app.store.CreateUser(bob)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenBob, err := core.GenerateToken(bob, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderBob := fmt.Sprintf("Bearer %s", tokenBob)
+	_, authorizationHeaderAlice := alice(t, app)
+	bob, authorizationHeaderBob := bob(t, app)
 
 	secondsEastOfUTC := int((3 * time.Hour).Seconds())
 	moscow := time.FixedZone("Moscow Time", secondsEastOfUTC)
@@ -789,12 +689,6 @@ func TestCreateWithdrawal(t *testing.T) {
 		return
 	}
 
-	err = app.store.CreateOrder(order)
-
-	if !assert.NoError(t, err) {
-		return
-	}
-
 	processedAt := time.Date(
 		2022,
 		time.August,
@@ -811,7 +705,7 @@ func TestCreateWithdrawal(t *testing.T) {
 		return
 	}
 
-	err = app.store.CreateWithdrawal(withdrawal)
+	err = app.store.CreateWithdrawal(withdrawal, order)
 
 	if !assert.NoError(t, err) {
 		return
@@ -963,54 +857,13 @@ func TestListWithdrawal(t *testing.T) {
 	const ENDPOINT = "/api/user/withdrawals"
 	const METHOD = http.MethodGet
 
-	app := NewApp()
-	server := httptest.NewServer(app.Router)
+	app, server := app(t)
+
 	defer server.Close()
 	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
 
-	alice, err := core.NewUser("alice", "correct-horse")
-	if !assert.NoError(t, err) {
-		return
-	}
-	alice.Balance = decimal.New(1337, -2)
-	err = app.store.CreateUser(alice)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = app.HydrateKeys()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	key, err := app.store.ExtractRandomKey()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenAlice, err := core.GenerateToken(alice, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderAlice := fmt.Sprintf("Bearer %s", tokenAlice)
-
-	bob, err := core.NewUser("bob", "sikret")
-	if !assert.NoError(t, err) {
-		return
-	}
-	bob.Balance = decimal.New(420, 0)
-	err = app.store.CreateUser(bob)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	tokenBob, err := core.GenerateToken(bob, key)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	authorizationHeaderBob := fmt.Sprintf("Bearer %s", tokenBob)
+	_, authorizationHeaderAlice := alice(t, app)
+	bob, authorizationHeaderBob := bob(t, app)
 
 	secondsEastOfUTC := int((3 * time.Hour).Seconds())
 	moscow := time.FixedZone("Moscow Time", secondsEastOfUTC)
@@ -1032,12 +885,6 @@ func TestListWithdrawal(t *testing.T) {
 		return
 	}
 
-	err = app.store.CreateOrder(order)
-
-	if !assert.NoError(t, err) {
-		return
-	}
-
 	processedAt := time.Date(
 		2022,
 		time.August,
@@ -1054,19 +901,13 @@ func TestListWithdrawal(t *testing.T) {
 		return
 	}
 
-	err = app.store.CreateWithdrawal(withdrawal)
+	err = app.store.CreateWithdrawal(withdrawal, order)
 
 	if !assert.NoError(t, err) {
 		return
 	}
 
 	order, err = core.NewOrder("12345678903", bob, createdAt)
-
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = app.store.CreateOrder(order)
 
 	if !assert.NoError(t, err) {
 		return
@@ -1088,7 +929,7 @@ func TestListWithdrawal(t *testing.T) {
 		return
 	}
 
-	err = app.store.CreateWithdrawal(withdrawal)
+	err = app.store.CreateWithdrawal(withdrawal, order)
 
 	if !assert.NoError(t, err) {
 		return

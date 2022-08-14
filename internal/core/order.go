@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type OrderStatus = string
@@ -21,10 +22,11 @@ const (
 var ERR_INVALID_ORDER = errors.New("invalid order id")
 
 type Order struct {
-	Id         string      `json:"number"`
-	Status     OrderStatus `json:"status"`
-	UploadedAt time.Time   `json:"uploaded_at"`
-	UserId     uuid.UUID   `json:"-"`
+	Id         string          `json:"number"`
+	Status     OrderStatus     `json:"status"`
+	UploadedAt time.Time       `json:"uploaded_at"`
+	UserId     uuid.UUID       `json:"-"`
+	Accrual    decimal.Decimal `json:"-"`
 }
 
 func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
@@ -58,5 +60,6 @@ func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
 		NEW,
 		uploadedAt,
 		user.Id,
+		decimal.Zero,
 	}, nil
 }

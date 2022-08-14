@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"log"
 	"math/rand"
 	"sort"
 	"sync"
@@ -14,7 +15,6 @@ import (
 
 type memStorage struct {
 	sync.RWMutex
-	// todo extract types
 	keys        map[uuid.UUID]core.HmacKey
 	orders      map[string]core.Order
 	users       map[string]core.User
@@ -162,24 +162,10 @@ func (store *memStorage) ExtractUserById(id uuid.UUID) (*core.User, error) {
 	return user, nil
 }
 
-func (store *memStorage) PersistUser(user *core.User) error {
+func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *core.Order) error {
 	store.Lock()
 	defer store.Unlock()
-
-	store.users[user.Login] = *user
-	return nil
-}
-
-func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal) error {
-	store.Lock()
-	defer store.Unlock()
-	orderId := withdrawal.OrderId
-
-	order, found := store.orders[orderId]
-	if !found {
-		// todo new error type
-		return errors.New("generic order error")
-	}
+	orderId := order.Id
 
 	userId := order.UserId
 
@@ -191,13 +177,23 @@ func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal) error {
 		}
 	}
 	if user == nil {
-		// todo new error type
-		return errors.New("generic user error")
+		return &ErrUserNotFoundById{userId}
 	}
 
 	if user.Balance.LessThan(withdrawal.Sum) {
+		log.Printf("err: %v < %v; %v", user.Balance, withdrawal.Sum, user)
 		return &ErrBalanceExceeded{}
 	}
+
+	prev, found := store.orders[orderId]
+	if found {
+		if prev.UserId == userId {
+			return &ErrOrderExists{orderId}
+		}
+		return &ErrOrderIdCollission{orderId}
+	}
+	store.orders[orderId] = *order
+
 	user.Balance = user.Balance.Sub(withdrawal.Sum)
 
 	store.withdrawals[withdrawal.Id] = *withdrawal

@@ -49,8 +49,8 @@ func (app *App) newHandler(h Handler) http.HandlerFunc {
 		case err := <-errChan:
 			if err != nil {
 				log.Printf("Unhandled error: %v", err)
-				wrapWrite(w, []byte("{\"status\": \"error\", \"message\": \"Internal server error\"}"))
 				w.WriteHeader(http.StatusInternalServerError)
+				wrapWrite(w, []byte("{\"status\": \"error\", \"message\": \"Internal server error\"}"))
 			}
 		case <-ctx.Done():
 		}
@@ -60,8 +60,6 @@ func (app *App) newHandler(h Handler) http.HandlerFunc {
 func (app *App) authenticate(r *http.Request) (*core.User, error) {
 	var user *core.User = nil
 	header := r.Header.Get("Authorization")
-
-	log.Printf("Header: %s", header)
 
 	var token string
 	_, err := fmt.Fscanf(strings.NewReader(header), "Bearer %s", &token)
@@ -145,9 +143,9 @@ func (app *App) login(user *core.User, w http.ResponseWriter) error {
 	return nil
 }
 
-func NewApp() *App {
+func NewApp(store storage.Storage) *App {
 	app := new(App)
-	app.store = storage.NewMemStorage()
+	app.store = store
 	r := chi.NewRouter()
 	app.Router = r
 

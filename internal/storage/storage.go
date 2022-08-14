@@ -8,9 +8,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// todo refactor considering transactions
-// todo introduce sql in-memory
-
 type Storage interface {
 	// auth
 	CreateKey(*core.HmacKey) error
@@ -24,9 +21,8 @@ type Storage interface {
 	CreateUser(*core.User) error
 	ExtractUser(string) (*core.User, error)
 	ExtractUserById(uuid.UUID) (*core.User, error)
-	PersistUser(*core.User) error
 	// withdrawals
-	CreateWithdrawal(*core.Withdrawal) error
+	CreateWithdrawal(*core.Withdrawal, *core.Order) error
 	ExtractWithdrawalsByUser(*core.User) ([]*core.Withdrawal, error)
 	TotalWithdrawnSum(*core.User) (decimal.Decimal, error)
 }

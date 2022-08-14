@@ -12,8 +12,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// TODO refactor
-
 func (app *App) registerUser(w http.ResponseWriter, r *http.Request) error {
 	var data userRegisterRequest
 	body, err := ioutil.ReadAll(r.Body)
@@ -42,7 +40,7 @@ func (app *App) registerUser(w http.ResponseWriter, r *http.Request) error {
 		w.WriteHeader(http.StatusConflict)
 	case nil:
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		return err
 	}
 
 	// todo perform login action
@@ -79,8 +77,7 @@ func (app *App) loginUser(w http.ResponseWriter, r *http.Request) error {
 		w.WriteHeader(http.StatusUnauthorized)
 		return nil
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
-		return nil
+		return err
 	}
 
 	passwordIsValid, err := user.ValidatePassword(data.Password)
@@ -225,15 +222,13 @@ func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) error {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return nil
 	}
-	if user.Balance.LessThan(data.Sum) {
-		w.WriteHeader(http.StatusPaymentRequired)
-		return nil
-	}
 	withdrawal, err := core.NewWithdrawal(order, data.Sum, timestamp)
 	if err != nil {
 		return err
 	}
-	err = app.store.CreateOrder(order)
+
+	err = app.store.CreateWithdrawal(withdrawal, order)
+
 	switch err.(type) {
 	case nil:
 	case *storage.ErrOrderExists:
@@ -242,17 +237,13 @@ func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) error {
 	case *storage.ErrOrderIdCollission:
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return nil
-
-	default:
-		w.WriteHeader(http.StatusInternalServerError)
+	case *storage.ErrBalanceExceeded:
+		w.WriteHeader(http.StatusPaymentRequired)
 		return nil
-	}
-
-	err = app.store.CreateWithdrawal(withdrawal)
-
-	if err != nil {
+	default:
 		return err
 	}
+
 	w.WriteHeader(http.StatusOK)
 	return nil
 }

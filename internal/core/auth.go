@@ -33,16 +33,16 @@ func (err *ErrUnexpectedSigningMethod) Error() string {
 
 type HmacKey struct {
 	Id        uuid.UUID
-	sign      []byte
-	expiresAt time.Time
+	Sign      []byte
+	ExpiresAt time.Time
 }
 
 func (key *HmacKey) Expired() bool {
-	return key.expiresAt.Before(time.Now())
+	return key.ExpiresAt.Before(time.Now())
 }
 
 func (key *HmacKey) Fresh() bool {
-	return time.Now().Before(key.expiresAt.Add(-4 * KEY_REFRESH_PERIOD))
+	return time.Now().Before(key.ExpiresAt.Add(-4 * KEY_REFRESH_PERIOD))
 }
 
 func NewKey() (*HmacKey, error) {
@@ -57,8 +57,8 @@ func NewKey() (*HmacKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key.sign = sign
-	key.expiresAt = expiresAt
+	key.Sign = sign
+	key.ExpiresAt = expiresAt
 	return key, nil
 }
 
@@ -88,7 +88,7 @@ func GenerateToken(user *User, key *HmacKey) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = key.Id.String()
 
-	signed, err := token.SignedString(key.sign)
+	signed, err := token.SignedString(key.Sign)
 
 	if err != nil {
 		return "", err
@@ -123,7 +123,7 @@ func ParseToken(signed string, keys map[uuid.UUID]HmacKey) (userId uuid.UUID, er
 			return nil, fmt.Errorf("key with id %s not found", keyId)
 		}
 
-		return key.sign, nil
+		return key.Sign, nil
 	})
 
 	if claims, ok := token.Claims.(*JwtClaims); ok && token.Valid {
