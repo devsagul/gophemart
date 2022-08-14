@@ -51,6 +51,7 @@ func Worker(
 			log.Printf("Accrual system returned non-200 code: %d %s", resp.StatusCode, (body))
 			continue
 		}
+		log.Printf("Response form accrual system: %d %s", resp.StatusCode, (body))
 
 		if err != nil {
 			log.Printf("Error while reading accrual system's response: %v", err)
