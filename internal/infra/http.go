@@ -74,7 +74,7 @@ func (app *App) authenticate(r *http.Request) (*core.User, error) {
 		return nil, err
 	}
 
-	userId, err := core.ParseToken(token, keys)
+	userID, err := core.ParseToken(token, keys)
 
 	switch err.(type) {
 	case nil:
@@ -91,13 +91,13 @@ func (app *App) authenticate(r *http.Request) (*core.User, error) {
 		return nil, nil
 	}
 
-	user, err = app.store.ExtractUserById(userId)
+	user, err = app.store.ExtractUserByID(userID)
 
 	switch err.(type) {
 	case nil:
 	case *storage.ErrKeyNotFound:
 		return nil, nil
-	case *storage.ErrUserNotFoundById:
+	case *storage.ErrUserNotFoundByID:
 		return nil, nil
 	default:
 		return nil, err

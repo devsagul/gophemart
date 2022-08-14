@@ -54,7 +54,7 @@ func main() {
 	accrualStream := make(chan *core.Order, ORDERS_BUFFER_SIZE)
 
 	go func() {
-		t := time.NewTicker(15 * time.Second)
+		t := time.NewTicker(30 * time.Second)
 		for range t.C {
 			log.Print("Tick")
 			orders, err := store.ExtractUnterminatedOrders()
@@ -67,7 +67,7 @@ func main() {
 
 			for _, order := range orders {
 
-				log.Printf("Adding order to process: %s", order.Id)
+				log.Printf("Adding order to process: %s", order.ID)
 				accrualStream <- order
 			}
 		}

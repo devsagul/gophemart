@@ -27,7 +27,7 @@ func (store *memStorage) CreateKey(key *core.HmacKey) error {
 	store.Lock()
 	defer store.Unlock()
 
-	store.keys[key.Id] = *key
+	store.keys[key.ID] = *key
 	return nil
 }
 
@@ -73,40 +73,40 @@ func (store *memStorage) ExtractAllKeys() (map[uuid.UUID]core.HmacKey, error) {
 	keys := make(map[uuid.UUID]core.HmacKey)
 
 	for _, key := range store.keys {
-		keys[key.Id] = key
+		keys[key.ID] = key
 	}
 
 	return keys, nil
 }
 
 func (store *memStorage) CreateOrder(order *core.Order) error {
-	userId := order.UserId
-	orderId := order.Id
+	userID := order.UserID
+	orderID := order.ID
 
 	store.Lock()
 	defer store.Unlock()
 
-	prev, found := store.orders[orderId]
+	prev, found := store.orders[orderID]
 	if found {
-		if prev.UserId == userId {
-			return &ErrOrderExists{orderId}
+		if prev.UserID == userID {
+			return &ErrOrderExists{orderID}
 		}
-		return &ErrOrderIdCollission{orderId}
+		return &ErrOrderIDCollission{orderID}
 	}
-	store.orders[orderId] = *order
+	store.orders[orderID] = *order
 	return nil
 }
 
 func (store *memStorage) ExtractOrdersByUser(user *core.User) ([]*core.Order, error) {
 	// TODO Add test
-	userId := user.Id
+	userID := user.ID
 	res := []*core.Order{}
 
 	store.RLock()
 	defer store.RUnlock()
 	for _, order := range store.orders {
 		order := order
-		if order.UserId == userId {
+		if order.UserID == userID {
 			res = append(res, &order)
 		}
 	}
@@ -158,21 +158,21 @@ func (store *memStorage) ExtractUser(login string) (*core.User, error) {
 	return &user, nil
 }
 
-func (store *memStorage) ExtractUserById(id uuid.UUID) (*core.User, error) {
+func (store *memStorage) ExtractUserByID(id uuid.UUID) (*core.User, error) {
 	store.RLock()
 	defer store.RUnlock()
 
 	var user *core.User = nil
 	for _, u := range store.users {
 		u := u
-		if u.Id == id {
+		if u.ID == id {
 			user = &u
 			break
 		}
 	}
 
 	if user == nil {
-		return nil, &ErrUserNotFoundById{id}
+		return nil, &ErrUserNotFoundByID{id}
 	}
 
 	return user, nil
@@ -181,19 +181,19 @@ func (store *memStorage) ExtractUserById(id uuid.UUID) (*core.User, error) {
 func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *core.Order) error {
 	store.Lock()
 	defer store.Unlock()
-	orderId := order.Id
+	orderID := order.ID
 
-	userId := order.UserId
+	userID := order.UserID
 
 	var user *core.User = nil
 	for _, u := range store.users {
-		if u.Id == userId {
+		if u.ID == userID {
 			user = &u
 			break
 		}
 	}
 	if user == nil {
-		return &ErrUserNotFoundById{userId}
+		return &ErrUserNotFoundByID{userID}
 	}
 
 	if user.Balance.LessThan(withdrawal.Sum) {
@@ -201,18 +201,18 @@ func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *co
 		return &ErrBalanceExceeded{}
 	}
 
-	prev, found := store.orders[orderId]
+	prev, found := store.orders[orderID]
 	if found {
-		if prev.UserId == userId {
-			return &ErrOrderExists{orderId}
+		if prev.UserID == userID {
+			return &ErrOrderExists{orderID}
 		}
-		return &ErrOrderIdCollission{orderId}
+		return &ErrOrderIDCollission{orderID}
 	}
-	store.orders[orderId] = *order
+	store.orders[orderID] = *order
 
 	user.Balance = user.Balance.Sub(withdrawal.Sum)
 
-	store.withdrawals[withdrawal.Id] = *withdrawal
+	store.withdrawals[withdrawal.ID] = *withdrawal
 	store.users[user.Login] = *user
 	return nil
 }
@@ -225,15 +225,15 @@ func (store *memStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core.With
 	defer store.RUnlock()
 
 	for _, order := range store.orders {
-		if order.UserId == user.Id {
-			userOrders[order.Id] = true
+		if order.UserID == user.ID {
+			userOrders[order.ID] = true
 		}
 	}
 
 	for _, withdrawal := range store.withdrawals {
 		withdrawal := withdrawal
-		orderId := withdrawal.OrderId
-		_, found := userOrders[orderId]
+		orderID := withdrawal.OrderID
+		_, found := userOrders[orderID]
 		if found {
 			res = append(res, &withdrawal)
 		}
@@ -252,12 +252,12 @@ func (store *memStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, er
 
 	withdrawn := decimal.Zero
 	for _, withdrawal := range store.withdrawals {
-		orderId := withdrawal.OrderId
-		order, found := store.orders[orderId]
+		orderID := withdrawal.OrderID
+		order, found := store.orders[orderID]
 		if !found {
 			return decimal.Zero, errors.New("no order found")
 		}
-		if order.UserId == user.Id {
+		if order.UserID == user.ID {
 			withdrawn = withdrawn.Add(withdrawal.Sum)
 		}
 	}
@@ -265,7 +265,7 @@ func (store *memStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, er
 	return withdrawn, nil
 }
 
-func (store *memStorage) ProcessAccrual(orderId string, status string, sum *decimal.Decimal) error {
+func (store *memStorage) ProcessAccrual(orderID string, status string, sum *decimal.Decimal) error {
 	if status == "REGISTERED" {
 		status = core.NEW
 	}
@@ -277,26 +277,26 @@ func (store *memStorage) ProcessAccrual(orderId string, status string, sum *deci
 	store.Lock()
 	defer store.Unlock()
 
-	order, found := store.orders[orderId]
+	order, found := store.orders[orderID]
 	if !found {
-		return fmt.Errorf("order with id %s does not exist", orderId)
+		return fmt.Errorf("order with id %s does not exist", orderID)
 	}
 
 	order.Status = status
 
-	id := order.UserId
+	id := order.UserID
 
 	var user *core.User = nil
 	for _, u := range store.users {
 		u := u
-		if u.Id == id {
+		if u.ID == id {
 			user = &u
 			break
 		}
 	}
 
 	if user == nil {
-		return &ErrUserNotFoundById{id}
+		return &ErrUserNotFoundByID{id}
 	}
 
 	if sum != nil {
@@ -304,7 +304,7 @@ func (store *memStorage) ProcessAccrual(orderId string, status string, sum *deci
 		order.Accrual = *sum
 	}
 
-	store.orders[orderId] = order
+	store.orders[orderID] = order
 	store.users[user.Login] = *user
 	return nil
 }

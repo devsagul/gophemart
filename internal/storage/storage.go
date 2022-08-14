@@ -24,24 +24,24 @@ type Storage interface {
 	// users
 	CreateUser(*core.User) error
 	ExtractUser(string) (*core.User, error)
-	ExtractUserById(uuid.UUID) (*core.User, error)
+	ExtractUserByID(uuid.UUID) (*core.User, error)
 	// withdrawals
 	CreateWithdrawal(*core.Withdrawal, *core.Order) error
 	ExtractWithdrawalsByUser(*core.User) ([]*core.Withdrawal, error)
 	TotalWithdrawnSum(*core.User) (decimal.Decimal, error)
 	// accrual
-	ProcessAccrual(orderId string, status string, sum *decimal.Decimal) error
+	ProcessAccrual(orderID string, status string, sum *decimal.Decimal) error
 }
 
 // errors
 
 // auth
 type ErrKeyNotFound struct {
-	keyId uuid.UUID
+	keyID uuid.UUID
 }
 
 func (err *ErrKeyNotFound) Error() string {
-	return fmt.Sprintf("active key with id %s not found", err.keyId)
+	return fmt.Sprintf("active key with id %s not found", err.keyID)
 }
 
 type ErrNoKeys struct{}
@@ -52,19 +52,19 @@ func (err *ErrNoKeys) Error() string {
 
 // order
 type ErrOrderExists struct {
-	orderId string
+	orderID string
 }
 
 func (err *ErrOrderExists) Error() string {
-	return fmt.Sprintf("order with id %s exists already for current user", err.orderId)
+	return fmt.Sprintf("order with id %s exists already for current user", err.orderID)
 }
 
-type ErrOrderIdCollission struct {
-	orderId string
+type ErrOrderIDCollission struct {
+	orderID string
 }
 
-func (err *ErrOrderIdCollission) Error() string {
-	return fmt.Sprintf("order with id %s exists already for other user", err.orderId)
+func (err *ErrOrderIDCollission) Error() string {
+	return fmt.Sprintf("order with id %s exists already for other user", err.orderID)
 }
 
 // user
@@ -76,11 +76,11 @@ func (err *ErrUserNotFound) Error() string {
 	return fmt.Sprintf("could not find user with login %s", err.login)
 }
 
-type ErrUserNotFoundById struct {
+type ErrUserNotFoundByID struct {
 	id uuid.UUID
 }
 
-func (err *ErrUserNotFoundById) Error() string {
+func (err *ErrUserNotFoundByID) Error() string {
 	return fmt.Sprintf("could not find user with id %s", err.id)
 }
 

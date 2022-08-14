@@ -21,20 +21,20 @@ const (
 )
 
 type ErrInvalidOrder struct {
-	orderId string
+	orderID string
 }
 
 func (err *ErrInvalidOrder) Error() string {
-	return fmt.Sprintf("invalid order number: %s", err.orderId)
+	return fmt.Sprintf("invalid order number: %s", err.orderID)
 }
 
 var ERR_INVALID_ORDER = errors.New("invalid order id")
 
 type Order struct {
-	Id         string          `json:"number"`
+	ID         string          `json:"number"`
 	Status     OrderStatus     `json:"status"`
 	UploadedAt time.Time       `json:"uploaded_at"`
-	UserId     uuid.UUID       `json:"-"`
+	UserID     uuid.UUID       `json:"-"`
 	Accrual    decimal.Decimal `json:"accrual,omitempty"`
 }
 
@@ -68,7 +68,7 @@ func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
 		id,
 		NEW,
 		uploadedAt,
-		user.Id,
+		user.ID,
 		decimal.Zero,
 	}, nil
 }

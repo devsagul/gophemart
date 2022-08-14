@@ -34,12 +34,12 @@ func Worker(
 	}
 
 	for order := range orders {
-		log.Printf("incoming order: %s", order.Id)
+		log.Printf("incoming order: %s", order.ID)
 		time.Sleep(15)
 		// todo manage frequency
 		apiUrl := *originalApiUrl
 
-		apiUrl.Path = path.Join(originalApiUrl.Path, fmt.Sprintf("/api/orders/%s", order.Id))
+		apiUrl.Path = path.Join(originalApiUrl.Path, fmt.Sprintf("/api/orders/%s", order.ID))
 		log.Printf("Getting order info from %s", apiUrl.String())
 		resp, err := http.Get(apiUrl.String())
 		if err != nil {

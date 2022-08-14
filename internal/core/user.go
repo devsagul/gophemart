@@ -19,7 +19,7 @@ var (
 )
 
 type User struct {
-	Id           uuid.UUID
+	ID           uuid.UUID
 	Login        string
 	PasswordHash string
 	Balance      decimal.Decimal
@@ -31,7 +31,7 @@ func NewUser(login, password string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	user.Id = id
+	user.ID = id
 	user.Balance = decimal.Zero
 	passwordHash, err := generatePasswordHash(password)
 	if err != nil {

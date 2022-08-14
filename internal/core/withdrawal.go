@@ -8,8 +8,8 @@ import (
 )
 
 type Withdrawal struct {
-	Id          uuid.UUID       `json:"-"`
-	OrderId     string          `json:"order"`
+	ID          uuid.UUID       `json:"-"`
+	OrderID     string          `json:"order"`
 	Sum         decimal.Decimal `json:"sum"`
 	ProcessedAt time.Time       `json:"processed_at"`
 }
@@ -21,8 +21,8 @@ func NewWithdrawal(order *Order, sum decimal.Decimal, processedAt time.Time) (*W
 	if err != nil {
 		return nil, err
 	}
-	withdrawal.Id = id
-	withdrawal.OrderId = order.Id
+	withdrawal.ID = id
+	withdrawal.OrderID = order.ID
 	withdrawal.Sum = sum
 	withdrawal.ProcessedAt = processedAt
 	return withdrawal, nil

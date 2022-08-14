@@ -32,7 +32,7 @@ func (err *ErrUnexpectedSigningMethod) Error() string {
 }
 
 type HmacKey struct {
-	Id        uuid.UUID
+	ID        uuid.UUID
 	Sign      []byte
 	ExpiresAt time.Time
 }
@@ -52,7 +52,7 @@ func NewKey() (*HmacKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key.Id = id
+	key.ID = id
 	sign, err := utils.GenerateRandomBytes(KeyLength)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func NewKey() (*HmacKey, error) {
 }
 
 type JwtClaims struct {
-	UserId uuid.UUID `json:"user,omitempty"`
+	UserID uuid.UUID `json:"user,omitempty"`
 	jwt.StandardClaims
 }
 
@@ -79,14 +79,14 @@ func GenerateToken(user *User, key *HmacKey) (string, error) {
 	expiration := now.Add(time.Duration(TokenPeriod))
 
 	claims := JwtClaims{
-		user.Id,
+		user.ID,
 		jwt.StandardClaims{
 			ExpiresAt: expiration.Unix(),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = key.Id.String()
+	token.Header["kid"] = key.ID.String()
 
 	signed, err := token.SignedString(key.Sign)
 
@@ -97,7 +97,7 @@ func GenerateToken(user *User, key *HmacKey) (string, error) {
 	return signed, nil
 }
 
-func ParseToken(signed string, keys map[uuid.UUID]HmacKey) (userId uuid.UUID, err error) {
+func ParseToken(signed string, keys map[uuid.UUID]HmacKey) (userID uuid.UUID, err error) {
 	token, err := jwt.ParseWithClaims(signed, &JwtClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, &ErrUnexpectedSigningMethod{token.Method}
@@ -113,21 +113,21 @@ func ParseToken(signed string, keys map[uuid.UUID]HmacKey) (userId uuid.UUID, er
 			return nil, errors.New("key id should be provided as string")
 		}
 
-		keyId, err := uuid.Parse(id)
+		keyID, err := uuid.Parse(id)
 		if err != nil {
 			return nil, err
 		}
 
-		key, found := keys[keyId]
+		key, found := keys[keyID]
 		if !found {
-			return nil, fmt.Errorf("key with id %s not found", keyId)
+			return nil, fmt.Errorf("key with id %s not found", keyID)
 		}
 
 		return key.Sign, nil
 	})
 
 	if claims, ok := token.Claims.(*JwtClaims); ok && token.Valid {
-		return claims.UserId, err
+		return claims.UserID, err
 	}
 
 	return uuid.Nil, err

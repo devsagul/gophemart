@@ -112,9 +112,9 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	orderId := string(body)
+	orderID := string(body)
 
-	order, err := core.NewOrder(orderId, user, time.Now())
+	order, err := core.NewOrder(orderID, user, time.Now())
 	switch err.(type) {
 	case *core.ErrInvalidOrder:
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -129,7 +129,7 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
 	case *storage.ErrOrderExists:
 		w.WriteHeader(http.StatusOK)
 		return nil
-	case *storage.ErrOrderIdCollission:
+	case *storage.ErrOrderIDCollission:
 		w.WriteHeader(http.StatusConflict)
 		return nil
 	case nil:
@@ -241,7 +241,7 @@ func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) error {
 	case *storage.ErrOrderExists:
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return nil
-	case *storage.ErrOrderIdCollission:
+	case *storage.ErrOrderIDCollission:
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return nil
 	case *storage.ErrBalanceExceeded:
