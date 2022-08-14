@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 
@@ -168,6 +169,7 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("list orders response: %s", string(body))
 	wrapWrite(w, body)
 	return nil
 }
