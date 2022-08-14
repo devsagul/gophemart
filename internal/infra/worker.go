@@ -54,7 +54,7 @@ func Worker(
 		err = json.Unmarshal(body, &data)
 		if err != nil {
 			log.Printf("Error while unmarshalling accrual system's response: %v", err)
-			log.Printf("Response: %s", string(body))
+			log.Printf("Response: %d %s", resp.StatusCode, (body))
 			continue
 		}
 
