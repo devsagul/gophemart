@@ -25,14 +25,14 @@ func Worker(
 	apiAddress string,
 	store storage.Storage,
 ) error {
-	apiUrl, err := url.Parse(apiAddress)
+	originalApiUrl, err := url.Parse(apiAddress)
 	if err != nil {
 		return err
 	}
 
 	for order := range orders {
 		// todo manage frequency
-		apiUrl := apiUrl
+		apiUrl := originalApiUrl
 		apiUrl.Path = path.Join(apiUrl.Path, fmt.Sprintf("/api/orders/%s", order.Id))
 		log.Printf("Getting order info from %s", apiUrl.String())
 		resp, err := http.Get(apiUrl.String())
@@ -52,6 +52,7 @@ func Worker(
 		if err != nil {
 			log.Printf("Error while unmarshalling accrual system's response: %v", err)
 			log.Printf("Response: %s", string(body))
+			continue
 		}
 
 		err = store.ProcessAccrual(data.Order, data.Status, data.Accrual)
