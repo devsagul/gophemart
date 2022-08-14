@@ -155,7 +155,7 @@ func NewApp(store storage.Storage, accrualStream chan<- *core.Order) *App {
 	r.Use(middleware.SetHeader("Content-Type", "application/json"))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Logger)
+	//r.Use(middleware.Logger)
 	r.Use(middleware.Compress(5))
 
 	r.Post("/api/user/register", app.newHandler(app.registerUser))
