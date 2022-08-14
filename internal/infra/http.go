@@ -87,9 +87,6 @@ func (app *App) authenticate(r *http.Request) (*core.User, error) {
 	default:
 		return nil, err
 	}
-	if err != nil {
-		return nil, nil
-	}
 
 	user, err = app.store.ExtractUserByID(userID)
 

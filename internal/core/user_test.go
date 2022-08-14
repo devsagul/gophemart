@@ -19,6 +19,7 @@ func TestUser(t *testing.T) {
 			assert.FailNow(t, "could not validate password")
 		}
 		assert.True(t, valid)
+		assert.NotNil(t, user)
 
 		valid, err = user.ValidatePassword("qwerty")
 		if err != nil {

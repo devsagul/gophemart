@@ -171,6 +171,10 @@ func TestRegisterUser(t *testing.T) {
 			if !assert.NoError(err) {
 				return
 			}
+			err = resp.Body.Close()
+			if !assert.NoError(err) {
+				return
+			}
 
 			authorizationHeader := resp.Header.Get("Authorization")
 
@@ -287,6 +291,10 @@ func TestLoginUser(t *testing.T) {
 				body = strings.NewReader(tCase.body)
 			}
 			resp, err := http.Post(url, contentType, body)
+			if !assert.NoError(err) {
+				return
+			}
+			err = resp.Body.Close()
 			if !assert.NoError(err) {
 				return
 			}
