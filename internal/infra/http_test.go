@@ -92,7 +92,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Parallel()
 
 	const endpoint = "/api/user/register"
-	const content_type = "application/json"
+	const contentType = "application/json"
 
 	_, server := app(t)
 	defer server.Close()
@@ -167,7 +167,7 @@ func TestRegisterUser(t *testing.T) {
 			} else {
 				body = strings.NewReader(tCase.body)
 			}
-			resp, err := http.Post(url, content_type, body)
+			resp, err := http.Post(url, contentType, body)
 			if !assert.NoError(err) {
 				return
 			}
@@ -187,7 +187,7 @@ func TestLoginUser(t *testing.T) {
 	t.Parallel()
 
 	const endpoint = "/api/user/login"
-	const content_type = "application/json"
+	const contentType = "application/json"
 
 	app, server := app(t)
 
@@ -286,7 +286,7 @@ func TestLoginUser(t *testing.T) {
 			} else {
 				body = strings.NewReader(tCase.body)
 			}
-			resp, err := http.Post(url, content_type, body)
+			resp, err := http.Post(url, contentType, body)
 			if !assert.NoError(err) {
 				return
 			}
@@ -306,7 +306,7 @@ func TestCreateOrder(t *testing.T) {
 	t.Parallel()
 
 	const endpoint = "/api/user/orders"
-	const content_type = "text/plain"
+	const contentType = "text/plain"
 	const method = http.MethodPost
 
 	app, server := app(t)
@@ -394,7 +394,7 @@ func TestCreateOrder(t *testing.T) {
 				return
 			}
 			req.Header.Set("Authorization", tCase.auth)
-			req.Header.Set("Content-Type", content_type)
+			req.Header.Set("Content-Type", contentType)
 
 			res, err := client.Do(req)
 			if !assert.NoError(err) {

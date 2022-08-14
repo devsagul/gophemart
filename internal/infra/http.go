@@ -21,7 +21,7 @@ func init() {
 	decimal.MarshalJSONWithoutQuotes = true
 }
 
-const NUM_KEYS_HYDRATED = 3
+const NumKeysHydrated = 3
 
 type Handler func(http.ResponseWriter, *http.Request) error
 
@@ -112,7 +112,7 @@ func (app *App) HydrateKeys() error {
 	case *storage.ErrNoKeys:
 		eg := errgroup.Group{}
 
-		for i := 0; i <= NUM_KEYS_HYDRATED; i++ {
+		for i := 0; i <= NumKeysHydrated; i++ {
 			eg.Go(func() error {
 				key, err := core.NewKey()
 				if err != nil {
