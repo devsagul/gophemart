@@ -165,6 +165,7 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (app *App) getBalance(w http.ResponseWriter, r *http.Request) error {
+	time.Sleep(5 * time.Second)
 	user := auth(w, r)
 	if user == nil {
 		return nil
