@@ -192,7 +192,7 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 
 func (store *postgresStorage) ExtractUnterminatedOrders() ([]*core.Order, error) {
 	orders := []*core.Order{}
-	query, err := store.db.Prepare("SELECT id, status, user_id, uploaded_at from app_order WHERE status != ANY({$1, $2})")
+	query, err := store.db.Prepare("SELECT id, status, user_id, uploaded_at from app_order WHERE status != $1 AND status != $2")
 
 	if err != nil {
 		return nil, err
@@ -468,7 +468,7 @@ func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum 
 		return err
 	}
 
-	query, err := tx.Prepare("UPDATE app_order SET status = $2 WHERE id = $1 AND status != ANY('{$3,$4}')")
+	query, err := tx.Prepare("UPDATE app_order SET status = $2 WHERE id = $1 AND status != $3 AND status != $4")
 	if err != nil {
 		return err
 	}
