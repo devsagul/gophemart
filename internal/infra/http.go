@@ -26,8 +26,9 @@ const NUM_KEYS_HYDRATED = 3
 type Handler func(http.ResponseWriter, *http.Request) error
 
 type App struct {
-	store  storage.Storage
-	Router *chi.Mux
+	store         storage.Storage
+	Router        *chi.Mux
+	accrualStream chan<- *core.Order
 }
 
 func (app *App) newHandler(h Handler) http.HandlerFunc {
@@ -143,8 +144,9 @@ func (app *App) login(user *core.User, w http.ResponseWriter) error {
 	return nil
 }
 
-func NewApp(store storage.Storage) *App {
+func NewApp(store storage.Storage, accrualStream chan<- *core.Order) *App {
 	app := new(App)
+	app.accrualStream = accrualStream
 	app.store = store
 	r := chi.NewRouter()
 	app.Router = r

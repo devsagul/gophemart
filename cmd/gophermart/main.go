@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/caarlos0/env"
+	"github.com/devsagul/gophemart/internal/core"
 	"github.com/devsagul/gophemart/internal/infra"
 	"github.com/devsagul/gophemart/internal/storage"
 )
@@ -47,7 +48,13 @@ func main() {
 	}
 
 	log.Println("Initializing application...")
-	app := infra.NewApp(store)
+	accrualStream := make(chan *core.Order)
+
+	if cfg.AccrualAddress != "" {
+		go infra.Worker(accrualStream, cfg.AccrualAddress, store)
+	}
+
+	app := infra.NewApp(store, accrualStream)
 	err = app.HydrateKeys()
 	// todo gorouting for keys hydration
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -417,6 +418,81 @@ func (store *postgresStorage) TotalWithdrawnSum(user *core.User) (decimal.Decima
 	}
 
 	return decimal.Zero, errors.New("no rows selected")
+}
+
+func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum *decimal.Decimal) error {
+	if status == "REGISTERED" {
+		status = core.NEW
+	}
+
+	if status != core.NEW || status != core.PROCESSED || status != core.INVALID || status != core.PROCESSED {
+		return fmt.Errorf("invalid order status: %v", status)
+	}
+
+	tx, err := store.db.Begin()
+	defer func() {
+		err := tx.Rollback()
+		if err != nil {
+			if err.Error() != "sql: transaction has already been committed or rolled back" {
+				log.Printf("error during transaction rollback: %v", err)
+			}
+		}
+	}()
+	if err != nil {
+		return err
+	}
+
+	query, err := tx.Prepare("UPDATE app_order SET status = $2 WHERE id = $1")
+	if err != nil {
+		return err
+	}
+	res, err := query.Exec(orderId, status)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return fmt.Errorf("expected one row to be affected, got %d", n)
+	}
+
+	if sum != nil {
+		query, err = tx.Prepare("UPDATE app_order SET accrual = $2 WHERE id = $1")
+		if err != nil {
+			return err
+		}
+		res, err = query.Exec(orderId, *sum)
+		if err != nil {
+			return err
+		}
+		n, err = res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if n != 1 {
+			return fmt.Errorf("expected one row to be affected, got %d", n)
+		}
+
+		query, err = tx.Prepare("UPDATE app_user SET balance = balance + $2 FROM app_order WHERE app_order.id = $1 AND app_user.id = app_order.user_id")
+		if err != nil {
+			return err
+		}
+		res, err = query.Exec(orderId, *sum)
+		if err != nil {
+			return err
+		}
+		n, err = res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if n != 1 {
+			return fmt.Errorf("expected one row to be affected, got %d", n)
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (store *postgresStorage) Ping(ctx context.Context) error {

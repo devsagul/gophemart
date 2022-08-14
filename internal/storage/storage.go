@@ -28,6 +28,8 @@ type Storage interface {
 	CreateWithdrawal(*core.Withdrawal, *core.Order) error
 	ExtractWithdrawalsByUser(*core.User) ([]*core.Withdrawal, error)
 	TotalWithdrawnSum(*core.User) (decimal.Decimal, error)
+	// accrual
+	ProcessAccrual(orderId string, status string, sum *decimal.Decimal) error
 }
 
 // errors

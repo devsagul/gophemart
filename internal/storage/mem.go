@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"sort"
@@ -248,6 +249,50 @@ func (store *memStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, er
 	}
 
 	return withdrawn, nil
+}
+
+func (store *memStorage) ProcessAccrual(orderId string, status string, sum *decimal.Decimal) error {
+	if status == "REGISTERED" {
+		status = core.NEW
+	}
+
+	if status != core.NEW || status != core.PROCESSED || status != core.INVALID || status != core.PROCESSED {
+		return fmt.Errorf("invalid order status: %v", status)
+	}
+
+	store.Lock()
+	defer store.Unlock()
+
+	order, found := store.orders[orderId]
+	if !found {
+		return fmt.Errorf("order with id %s does not exist", orderId)
+	}
+
+	order.Status = status
+
+	id := order.UserId
+
+	var user *core.User = nil
+	for _, u := range store.users {
+		u := u
+		if u.Id == id {
+			user = &u
+			break
+		}
+	}
+
+	if user == nil {
+		return &ErrUserNotFoundById{id}
+	}
+
+	if sum != nil {
+		user.Balance = user.Balance.Add(*sum)
+		order.Accrual = *sum
+	}
+
+	store.orders[orderId] = order
+	store.users[user.Login] = *user
+	return nil
 }
 
 func (store *memStorage) Ping(context.Context) error {

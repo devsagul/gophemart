@@ -135,6 +135,12 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
 	default:
 		return err
 	}
+
+	select {
+	case app.accrualStream <- order:
+	default:
+	}
+
 	w.WriteHeader(http.StatusAccepted)
 	return nil
 }
