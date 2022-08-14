@@ -192,7 +192,7 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 
 func (store *postgresStorage) ExtractUnterminatedOrders() ([]*core.Order, error) {
 	orders := []*core.Order{}
-	query, err := store.db.Prepare("SELECT id, status, user_id, uploaded_at from app_order WHERE status != $1 AND status != $2 ORDER BY created_at")
+	query, err := store.db.Prepare("SELECT id, status, user_id, uploaded_at from app_order WHERE status != $1 AND status != $2 ORDER BY uploaded_at")
 
 	if err != nil {
 		return nil, err
