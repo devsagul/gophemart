@@ -170,7 +170,6 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (app *App) getBalance(w http.ResponseWriter, r *http.Request) error {
-	time.Sleep(30 * time.Second)
 	user := auth(w, r)
 	if user == nil {
 		return nil
@@ -184,12 +183,6 @@ func (app *App) getBalance(w http.ResponseWriter, r *http.Request) error {
 	type balanceResponse struct {
 		Current   decimal.Decimal `json:"current"`
 		Withdrawn decimal.Decimal `json:"withdrawn"`
-	}
-
-	// reload user balance
-	user, err = app.store.ExtractUserById(user.Id)
-	if err != nil {
-		return err
 	}
 
 	data := balanceResponse{
