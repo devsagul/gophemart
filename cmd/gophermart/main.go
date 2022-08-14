@@ -11,6 +11,8 @@ import (
 	"github.com/devsagul/gophemart/internal/storage"
 )
 
+const ORDERS_BUFFER_SIZE = 255
+
 type config struct {
 	Address        string `env:"RUN_ADDRESS"`
 	DatabaseDsn    string `env:"DATABASE_URI"`
@@ -48,7 +50,7 @@ func main() {
 	}
 
 	log.Println("Initializing application...")
-	accrualStream := make(chan *core.Order)
+	accrualStream := make(chan *core.Order, ORDERS_BUFFER_SIZE)
 
 	if cfg.AccrualAddress != "" {
 		go infra.Worker(accrualStream, cfg.AccrualAddress, store)
@@ -63,6 +65,6 @@ func main() {
 
 	err = http.ListenAndServe(cfg.Address, app.Router)
 	if err != nil {
-		log.Fatalf("COuld not start the HTTP server: %v", err)
+		log.Fatalf("Could not start the HTTP server: %v", err)
 	}
 }
