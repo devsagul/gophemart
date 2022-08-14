@@ -19,6 +19,7 @@ type config struct {
 var cfg config
 
 func init() {
+	// todo add accrual poller
 	flag.StringVar(&cfg.Address, "a", "localhost:8000", "Address of the server (to listen to)")
 	flag.StringVar(&cfg.DatabaseDsn, "d", "", "DSN to connect to the database (leave empty to use in-memory DB)")
 	flag.StringVar(&cfg.AccrualAddress, "r", "", "Address of the accrual system")

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"log"
 	"math/rand"
@@ -247,6 +248,14 @@ func (store *memStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, er
 	}
 
 	return withdrawn, nil
+}
+
+func (store *memStorage) Ping(context.Context) error {
+	return nil
+}
+
+func (store *memStorage) WithContext(context.Context) Storage {
+	return store
 }
 
 func NewMemStorage() Storage {

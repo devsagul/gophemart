@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log"
@@ -12,11 +13,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// todo add ping
 // todo add context
 
 type postgresStorage struct {
-	db *sql.DB
+	db  *sql.DB
+	ctx context.Context
 }
 
 func (store *postgresStorage) CreateKey(key *core.HmacKey) error {
@@ -416,6 +417,16 @@ func (store *postgresStorage) TotalWithdrawnSum(user *core.User) (decimal.Decima
 	}
 
 	return decimal.Zero, errors.New("no rows selected")
+}
+
+func (store *postgresStorage) Ping(ctx context.Context) error {
+	return store.db.PingContext(ctx)
+}
+
+func (store *postgresStorage) WithContext(ctx context.Context) Storage {
+	newStore := *store
+	newStore.ctx = ctx
+	return &newStore
 }
 
 func NewPostgresStorage(dsn string) (Storage, error) {
