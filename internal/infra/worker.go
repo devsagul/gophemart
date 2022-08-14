@@ -37,6 +37,7 @@ func Worker(
 		apiUrl := *originalApiUrl
 
 		apiUrl.Path = path.Join(originalApiUrl.Path, fmt.Sprintf("/api/orders/%s", order.Id))
+		log.Printf("Getting order info from %s", apiUrl.String())
 		resp, err := http.Get(apiUrl.String())
 		if err != nil {
 			log.Printf("Error during orders processing: %v", err)
