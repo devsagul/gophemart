@@ -64,12 +64,12 @@ func NewKey() (*HmacKey, error) {
 
 type JwtClaims struct {
 	UserID uuid.UUID `json:"user,omitempty"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 func (claims JwtClaims) Valid() error {
-	if !claims.VerifyExpiresAt(time.Now().Unix(), true) {
-		return &ErrExpiredToken{time.Unix(claims.ExpiresAt, 0)}
+	if !claims.VerifyExpiresAt(time.Now(), true) {
+		return &ErrExpiredToken{claims.ExpiresAt.Time}
 	}
 	return nil
 }
@@ -80,8 +80,8 @@ func GenerateToken(user *User, key *HmacKey) (string, error) {
 
 	claims := JwtClaims{
 		user.ID,
-		jwt.StandardClaims{
-			ExpiresAt: expiration.Unix(),
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiration),
 		},
 	}
 
