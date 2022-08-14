@@ -274,22 +274,22 @@ func (store *postgresStorage) ExtractUser(login string) (*core.User, error) {
 		return nil, err
 	}
 
-	rows, err := query.Query(login)
+	row := query.QueryRow(login)
+	switch row.Err() {
+	case sql.ErrNoRows:
+		return nil, &ErrUserNotFound{login}
+	case nil:
+	default:
+		return nil, err
+	}
+
+	var user core.User
+	err = row.Scan(&user.ID, &user.Login, &user.PasswordHash, &user.Balance)
 	if err != nil {
 		return nil, err
 	}
-	for rows.Next() {
 
-		var user core.User
-		err = rows.Scan(&user.ID, &user.Login, &user.PasswordHash, &user.Balance)
-		if err != nil {
-			return nil, err
-		}
-
-		return &user, nil
-	}
-
-	return nil, &ErrUserNotFound{login}
+	return &user, nil
 }
 
 func (store *postgresStorage) ExtractUserByID(id uuid.UUID) (*core.User, error) {
@@ -298,22 +298,22 @@ func (store *postgresStorage) ExtractUserByID(id uuid.UUID) (*core.User, error) 
 		return nil, err
 	}
 
-	rows, err := query.Query(id)
+	row := query.QueryRow(id)
+	switch row.Err() {
+	case sql.ErrNoRows:
+		return nil, &ErrUserNotFoundByID{id}
+	case nil:
+	default:
+		return nil, err
+	}
+
+	var user core.User
+	err = row.Scan(&user.ID, &user.Login, &user.PasswordHash, &user.Balance)
 	if err != nil {
 		return nil, err
 	}
-	for rows.Next() {
 
-		var user core.User
-		err = rows.Scan(&user.ID, &user.Login, &user.PasswordHash, &user.Balance)
-		if err != nil {
-			return nil, err
-		}
-
-		return &user, nil
-	}
-
-	return nil, &ErrUserNotFoundByID{id}
+	return &user, nil
 }
 
 // withdrawals
@@ -439,21 +439,22 @@ func (store *postgresStorage) TotalWithdrawnSum(user *core.User) (decimal.Decima
 		return decimal.Zero, err
 	}
 
-	rows, err := query.Query(user.ID)
+	row := query.QueryRow(user.ID)
+	switch row.Err() {
+	case sql.ErrNoRows:
+		return decimal.Zero, errors.New("no rows selected")
+	case nil:
+	default:
+		return decimal.Zero, err
+	}
+
+	var sum decimal.Decimal
+	err = row.Scan(&sum)
 	if err != nil {
 		return decimal.Zero, err
 	}
-	for rows.Next() {
-		var sum decimal.Decimal
-		err = rows.Scan(&sum)
-		if err != nil {
-			return decimal.Zero, err
-		}
 
-		return sum, nil
-	}
-
-	return decimal.Zero, errors.New("no rows selected")
+	return sum, nil
 }
 
 func (store *postgresStorage) ProcessAccrual(orderID string, status string, sum *decimal.Decimal) error {
