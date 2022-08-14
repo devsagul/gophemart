@@ -501,6 +501,8 @@ func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum 
 			return fmt.Errorf("expected one row to be affected, got %d", n)
 		}
 
+		log.Printf("adding %s to balance", *sum)
+
 		query, err = tx.Prepare("UPDATE app_user SET balance = balance + $2 FROM app_order WHERE app_order.id = $1 AND app_user.id = app_order.user_id")
 		if err != nil {
 			return err
