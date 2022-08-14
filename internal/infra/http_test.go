@@ -91,13 +91,13 @@ func bob(t *testing.T, app *App) (*core.User, string) {
 func TestRegisterUser(t *testing.T) {
 	t.Parallel()
 
-	const ENDPOINT = "/api/user/register"
-	const CONTENT_TYPE = "application/json"
+	const endpoint = "/api/user/register"
+	const content_type = "application/json"
 
 	_, server := app(t)
 	defer server.Close()
 
-	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
+	url := fmt.Sprintf("%s%s", server.URL, endpoint)
 
 	type testCase struct {
 		name         string
@@ -167,7 +167,7 @@ func TestRegisterUser(t *testing.T) {
 			} else {
 				body = strings.NewReader(tCase.body)
 			}
-			resp, err := http.Post(url, CONTENT_TYPE, body)
+			resp, err := http.Post(url, content_type, body)
 			if !assert.NoError(err) {
 				return
 			}
@@ -186,13 +186,13 @@ func TestRegisterUser(t *testing.T) {
 func TestLoginUser(t *testing.T) {
 	t.Parallel()
 
-	const ENDPOINT = "/api/user/login"
-	const CONTENT_TYPE = "application/json"
+	const endpoint = "/api/user/login"
+	const content_type = "application/json"
 
 	app, server := app(t)
 
 	defer server.Close()
-	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
+	url := fmt.Sprintf("%s%s", server.URL, endpoint)
 
 	user, err := core.NewUser("bob", "sikret")
 	if !assert.NoError(t, err) {
@@ -286,7 +286,7 @@ func TestLoginUser(t *testing.T) {
 			} else {
 				body = strings.NewReader(tCase.body)
 			}
-			resp, err := http.Post(url, CONTENT_TYPE, body)
+			resp, err := http.Post(url, content_type, body)
 			if !assert.NoError(err) {
 				return
 			}
@@ -305,14 +305,14 @@ func TestLoginUser(t *testing.T) {
 func TestCreateOrder(t *testing.T) {
 	t.Parallel()
 
-	const ENDPOINT = "/api/user/orders"
-	const CONTENT_TYPE = "text/plain"
-	const METHOD = http.MethodPost
+	const endpoint = "/api/user/orders"
+	const content_type = "text/plain"
+	const method = http.MethodPost
 
 	app, server := app(t)
 
 	defer server.Close()
-	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
+	url := fmt.Sprintf("%s%s", server.URL, endpoint)
 
 	_, authorizationHeaderAlice := alice(t, app)
 	_, authorizationHeaderBob := bob(t, app)
@@ -389,12 +389,12 @@ func TestCreateOrder(t *testing.T) {
 				body = strings.NewReader(tCase.body)
 			}
 
-			req, err := http.NewRequest(METHOD, url, body)
+			req, err := http.NewRequest(method, url, body)
 			if !assert.NoError(err) {
 				return
 			}
 			req.Header.Set("Authorization", tCase.auth)
-			req.Header.Set("Content-Type", CONTENT_TYPE)
+			req.Header.Set("Content-Type", content_type)
 
 			res, err := client.Do(req)
 			if !assert.NoError(err) {
@@ -409,13 +409,13 @@ func TestCreateOrder(t *testing.T) {
 func TestListOrders(t *testing.T) {
 	t.Parallel()
 
-	const ENDPOINT = "/api/user/orders"
-	const METHOD = http.MethodGet
+	const endpoint = "/api/user/orders"
+	const method = http.MethodGet
 
 	app, server := app(t)
 
 	defer server.Close()
-	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
+	url := fmt.Sprintf("%s%s", server.URL, endpoint)
 
 	_, authorizationHeaderAlice := alice(t, app)
 	bob, authorizationHeaderBob := bob(t, app)
@@ -505,7 +505,7 @@ func TestListOrders(t *testing.T) {
 	for _, tCase := range testCases {
 		t.Run(tCase.name, func(t *testing.T) {
 			assert := assert.New(t)
-			req, err := http.NewRequest(METHOD, url, nil)
+			req, err := http.NewRequest(method, url, nil)
 			if !assert.NoError(err) {
 				return
 			}
@@ -521,11 +521,11 @@ func TestListOrders(t *testing.T) {
 			if tCase.checkBody {
 				body := res.Body
 				defer body.Close()
-				bodyJson, err := ioutil.ReadAll(body)
+				bodyJSON, err := ioutil.ReadAll(body)
 				if !assert.NoError(err) {
 					return
 				}
-				assert.JSONEq(tCase.expectedBody, string(bodyJson))
+				assert.JSONEq(tCase.expectedBody, string(bodyJSON))
 			}
 		})
 	}
@@ -535,13 +535,13 @@ func TestListOrders(t *testing.T) {
 func TestGetBalance(t *testing.T) {
 	t.Parallel()
 
-	const ENDPOINT = "/api/user/balance"
-	const METHOD = http.MethodGet
+	const endpoint = "/api/user/balance"
+	const method = http.MethodGet
 
 	app, server := app(t)
 
 	defer server.Close()
-	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
+	url := fmt.Sprintf("%s%s", server.URL, endpoint)
 
 	_, authorizationHeaderAlice := alice(t, app)
 	bob, authorizationHeaderBob := bob(t, app)
@@ -629,7 +629,7 @@ func TestGetBalance(t *testing.T) {
 	for _, tCase := range testCases {
 		t.Run(tCase.name, func(t *testing.T) {
 			assert := assert.New(t)
-			req, err := http.NewRequest(METHOD, url, nil)
+			req, err := http.NewRequest(method, url, nil)
 			if !assert.NoError(err) {
 				return
 			}
@@ -645,11 +645,11 @@ func TestGetBalance(t *testing.T) {
 			if tCase.checkBody {
 				body := res.Body
 				defer body.Close()
-				bodyJson, err := ioutil.ReadAll(body)
+				bodyJSON, err := ioutil.ReadAll(body)
 				if !assert.NoError(err) {
 					return
 				}
-				assert.JSONEq(tCase.expectedBody, string(bodyJson))
+				assert.JSONEq(tCase.expectedBody, string(bodyJSON))
 			}
 		})
 	}
@@ -658,13 +658,13 @@ func TestGetBalance(t *testing.T) {
 func TestCreateWithdrawal(t *testing.T) {
 	t.Parallel()
 
-	const ENDPOINT = "/api/user/balance/withdraw"
-	const METHOD = http.MethodPost
+	const endpoint = "/api/user/balance/withdraw"
+	const method = http.MethodPost
 
 	app, server := app(t)
 
 	defer server.Close()
-	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
+	url := fmt.Sprintf("%s%s", server.URL, endpoint)
 
 	_, authorizationHeaderAlice := alice(t, app)
 	bob, authorizationHeaderBob := bob(t, app)
@@ -825,7 +825,7 @@ func TestCreateWithdrawal(t *testing.T) {
 			} else {
 				body = strings.NewReader(tCase.body)
 			}
-			req, err := http.NewRequest(METHOD, url, body)
+			req, err := http.NewRequest(method, url, body)
 			if !assert.NoError(err) {
 				return
 			}
@@ -841,11 +841,11 @@ func TestCreateWithdrawal(t *testing.T) {
 			if tCase.checkBody {
 				body := res.Body
 				defer body.Close()
-				bodyJson, err := ioutil.ReadAll(body)
+				bodyJSON, err := ioutil.ReadAll(body)
 				if !assert.NoError(err) {
 					return
 				}
-				assert.JSONEq(tCase.expectedBody, string(bodyJson))
+				assert.JSONEq(tCase.expectedBody, string(bodyJSON))
 			}
 		})
 	}
@@ -854,13 +854,13 @@ func TestCreateWithdrawal(t *testing.T) {
 func TestListWithdrawal(t *testing.T) {
 	t.Parallel()
 
-	const ENDPOINT = "/api/user/withdrawals"
-	const METHOD = http.MethodGet
+	const endpoint = "/api/user/withdrawals"
+	const method = http.MethodGet
 
 	app, server := app(t)
 
 	defer server.Close()
-	url := fmt.Sprintf("%s%s", server.URL, ENDPOINT)
+	url := fmt.Sprintf("%s%s", server.URL, endpoint)
 
 	_, authorizationHeaderAlice := alice(t, app)
 	bob, authorizationHeaderBob := bob(t, app)
@@ -972,7 +972,7 @@ func TestListWithdrawal(t *testing.T) {
 	for _, tCase := range testCases {
 		t.Run(tCase.name, func(t *testing.T) {
 			assert := assert.New(t)
-			req, err := http.NewRequest(METHOD, url, nil)
+			req, err := http.NewRequest(method, url, nil)
 			if !assert.NoError(err) {
 				return
 			}
@@ -988,11 +988,11 @@ func TestListWithdrawal(t *testing.T) {
 			if tCase.checkBody {
 				body := res.Body
 				defer body.Close()
-				bodyJson, err := ioutil.ReadAll(body)
+				bodyJSON, err := ioutil.ReadAll(body)
 				if !assert.NoError(err) {
 					return
 				}
-				assert.JSONEq(tCase.expectedBody, string(bodyJson))
+				assert.JSONEq(tCase.expectedBody, string(bodyJSON))
 			}
 		})
 	}

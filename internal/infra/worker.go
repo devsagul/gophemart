@@ -26,9 +26,9 @@ func Worker(
 	apiAddress string,
 	store storage.Storage,
 ) error {
-	originalApiUrl, err := url.Parse(apiAddress)
+	originalAPIURL, err := url.Parse(apiAddress)
 
-	log.Printf("Original api url: %s", originalApiUrl.String())
+	log.Printf("Original api url: %s", originalAPIURL.String())
 	if err != nil {
 		return err
 	}
@@ -37,11 +37,11 @@ func Worker(
 		log.Printf("incoming order: %s", order.ID)
 		time.Sleep(15)
 		// todo manage frequency
-		apiUrl := *originalApiUrl
+		apiURL := *originalAPIURL
 
-		apiUrl.Path = path.Join(originalApiUrl.Path, fmt.Sprintf("/api/orders/%s", order.ID))
-		log.Printf("Getting order info from %s", apiUrl.String())
-		resp, err := http.Get(apiUrl.String())
+		apiURL.Path = path.Join(originalAPIURL.Path, fmt.Sprintf("/api/orders/%s", order.ID))
+		log.Printf("Getting order info from %s", apiURL.String())
+		resp, err := http.Get(apiURL.String())
 		if err != nil {
 			log.Printf("Error during orders processing: %v", err)
 			continue
