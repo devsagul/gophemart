@@ -179,9 +179,12 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 	for rows.Next() {
 
 		var order core.Order
-		err = rows.Scan(&order.ID, &order.Status, &order.UserID, &order.UploadedAt, &order.Accrual)
+		err = rows.Scan(&order.ID, &order.Status, &order.UserID, &order.UploadedAt, order.Accrual)
 		if err != nil {
 			return nil, err
+		}
+		if *order.Accrual == decimal.Zero {
+			order.Accrual = nil
 		}
 		order.UploadedAt = order.UploadedAt.Local()
 		orders = append(orders, &order)
@@ -561,7 +564,7 @@ func NewPostgresStorage(dsn string) (Storage, error) {
 		return nil, err
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS app_order (id TEXT PRIMARY KEY, status VARCHAR(255) NOT NULL, uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL, user_id UUID NOT NULL, accrual NUMERIC NOT NULL DEFAULT 0, CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES app_user(id))")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS app_order (id TEXT PRIMARY KEY, status VARCHAR(255) NOT NULL, uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL, user_id UUID NOT NULL, accrual NUMERIC NULL DEFAULT NULL, CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES app_user(id))")
 	if err != nil {
 		return nil, err
 	}

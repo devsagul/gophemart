@@ -3,7 +3,6 @@
 package core
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -28,14 +27,12 @@ func (err *ErrInvalidOrder) Error() string {
 	return fmt.Sprintf("invalid order number: %s", err.orderID)
 }
 
-var ERR_INVALID_ORDER = errors.New("invalid order id")
-
 type Order struct {
-	ID         string          `json:"number"`
-	Status     OrderStatus     `json:"status"`
-	UploadedAt time.Time       `json:"uploaded_at"`
-	UserID     uuid.UUID       `json:"-"`
-	Accrual    decimal.Decimal `json:"accrual,omitempty"`
+	ID         string           `json:"number"`
+	Status     OrderStatus      `json:"status"`
+	UploadedAt time.Time        `json:"uploaded_at"`
+	UserID     uuid.UUID        `json:"-"`
+	Accrual    *decimal.Decimal `json:"accrual,omitempty"`
 }
 
 func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
@@ -69,6 +66,6 @@ func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
 		NEW,
 		uploadedAt,
 		user.ID,
-		decimal.Zero,
+		nil,
 	}, nil
 }

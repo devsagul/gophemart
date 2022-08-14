@@ -225,9 +225,13 @@ func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) error {
 	timestamp := time.Now()
 
 	order, err := core.NewOrder(data.Order, user, timestamp)
-	if err == core.ERR_INVALID_ORDER {
+	switch err.(type) {
+	case *core.ErrInvalidOrder:
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return nil
+	case nil:
+	default:
+		return err
 	}
 	withdrawal, err := core.NewWithdrawal(order, data.Sum, timestamp)
 	if err != nil {

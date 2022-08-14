@@ -23,7 +23,7 @@ func app(t *testing.T) (*App, *httptest.Server) {
 
 	store := storage.NewMemStorage()
 
-	app := NewApp(store)
+	app := NewApp(store, make(chan<- *core.Order, 255))
 
 	server := httptest.NewServer(app.Router)
 	err := app.HydrateKeys()

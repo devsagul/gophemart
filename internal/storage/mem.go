@@ -301,7 +301,7 @@ func (store *memStorage) ProcessAccrual(orderID string, status string, sum *deci
 
 	if sum != nil {
 		user.Balance = user.Balance.Add(*sum)
-		order.Accrual = *sum
+		order.Accrual = sum
 	}
 
 	store.orders[orderID] = order
