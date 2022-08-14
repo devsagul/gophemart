@@ -26,6 +26,8 @@ func Worker(
 	store storage.Storage,
 ) error {
 	originalApiUrl, err := url.Parse(apiAddress)
+
+	log.Printf("Original api url: %s", originalApiUrl.String())
 	if err != nil {
 		return err
 	}
@@ -33,6 +35,8 @@ func Worker(
 	for order := range orders {
 		// todo manage frequency
 		apiUrl := originalApiUrl
+
+		log.Printf("Original api url (in loop): %s", originalApiUrl.String())
 		apiUrl.Path = path.Join(originalApiUrl.Path, fmt.Sprintf("/api/orders/%s", order.Id))
 		log.Printf("Getting order info from %s", apiUrl.String())
 		resp, err := http.Get(apiUrl.String())
