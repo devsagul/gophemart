@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -137,19 +136,16 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	/*
-		select {
-		case app.accrualStream <- order:
-		default:
-		}
-	*/
+	select {
+	case app.accrualStream <- order:
+	default:
+	}
 
 	w.WriteHeader(http.StatusAccepted)
 	return nil
 }
 
 func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
-	time.Sleep(2 * time.Second)
 	user := auth(w, r)
 	if user == nil {
 		return nil
@@ -169,7 +165,6 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("list orders response: %s", string(body))
 	wrapWrite(w, body)
 	return nil
 }
