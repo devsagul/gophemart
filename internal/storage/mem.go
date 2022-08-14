@@ -118,6 +118,20 @@ func (store *memStorage) ExtractOrdersByUser(user *core.User) ([]*core.Order, er
 	return res, nil
 }
 
+func (store *memStorage) ExtractUnterminatedOrders() ([]*core.Order, error) {
+	orders := []*core.Order{}
+	store.RLock()
+	defer store.RUnlock()
+	for _, order := range store.orders {
+		order := order
+		if order.Status != core.PROCESSED && order.Status != core.INVALID {
+			orders = append(orders, &order)
+		}
+	}
+
+	return orders, nil
+}
+
 func (store *memStorage) CreateUser(user *core.User) error {
 	login := user.Login
 
@@ -256,7 +270,7 @@ func (store *memStorage) ProcessAccrual(orderId string, status string, sum *deci
 		status = core.NEW
 	}
 
-	if status != core.NEW || status != core.PROCESSED || status != core.INVALID || status != core.PROCESSED {
+	if status != core.NEW && status != core.PROCESSING && status != core.INVALID && status != core.PROCESSED {
 		return fmt.Errorf("invalid order status: %v", status)
 	}
 

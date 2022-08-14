@@ -20,6 +20,7 @@ type Storage interface {
 	// orders
 	CreateOrder(*core.Order) error
 	ExtractOrdersByUser(*core.User) ([]*core.Order, error)
+	ExtractUnterminatedOrders() ([]*core.Order, error)
 	// users
 	CreateUser(*core.User) error
 	ExtractUser(string) (*core.User, error)

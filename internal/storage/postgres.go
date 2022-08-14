@@ -190,6 +190,32 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 	return orders, nil
 }
 
+func (store *postgresStorage) ExtractUnterminatedOrders() ([]*core.Order, error) {
+	orders := []*core.Order{}
+	query, err := store.db.Prepare("SELECT id, status, user_id, uploaded_at from app_order WHERE status != ANY({$1, $2}::STRING[])")
+
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := query.Query(core.PROCESSED, core.INVALID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+
+		var order core.Order
+		err = rows.Scan(&order.Id, &order.Status, &order.UserId, &order.UploadedAt)
+		if err != nil {
+			return nil, err
+		}
+		order.UploadedAt = order.UploadedAt.Local()
+		orders = append(orders, &order)
+	}
+
+	return orders, nil
+}
+
 // users
 func (store *postgresStorage) CreateUser(user *core.User) error {
 	// we have to check on application error so as not to parse psql error
@@ -442,11 +468,11 @@ func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum 
 		return err
 	}
 
-	query, err := tx.Prepare("UPDATE app_order SET status = $2 WHERE id = $1")
+	query, err := tx.Prepare("UPDATE app_order SET status = $2 WHERE id = $1 AND status != ANY('{$3,$4}'::STRING[])")
 	if err != nil {
 		return err
 	}
-	res, err := query.Exec(orderId, status)
+	res, err := query.Exec(orderId, status, core.PROCESSED, core.INVALID)
 	if err != nil {
 		return err
 	}

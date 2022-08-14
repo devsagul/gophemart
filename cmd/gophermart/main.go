@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/caarlos0/env"
 	"github.com/devsagul/gophemart/internal/core"
@@ -52,6 +53,23 @@ func main() {
 	log.Println("Initializing application...")
 	accrualStream := make(chan *core.Order, ORDERS_BUFFER_SIZE)
 
+	go func() {
+		t := time.NewTicker(5 * time.Second)
+		for range t.C {
+			orders, err := store.ExtractUnterminatedOrders()
+			if err != nil {
+				// todo log
+				continue
+			}
+			for _, order := range orders {
+				select {
+				case accrualStream <- order:
+				default:
+				}
+			}
+		}
+	}()
+
 	if cfg.AccrualAddress != "" {
 		go infra.Worker(accrualStream, cfg.AccrualAddress, store)
 	}
@@ -60,7 +78,7 @@ func main() {
 	err = app.HydrateKeys()
 	// todo goroutine for keys hydration
 	if err != nil {
-		log.Fatalf("Could not hydrate the keys: %v")
+		log.Fatalf("Could not hydrate the keys: %v", err)
 	}
 
 	err = http.ListenAndServe(cfg.Address, app.Router)
