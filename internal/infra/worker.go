@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	"github.com/devsagul/gophemart/internal/core"
 	"github.com/devsagul/gophemart/internal/storage"
@@ -33,6 +34,7 @@ func Worker(
 	}
 
 	for order := range orders {
+		time.Sleep(time.Second)
 		// todo manage frequency
 		apiUrl := *originalApiUrl
 
@@ -45,6 +47,11 @@ func Worker(
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
+		if resp.StatusCode != 200 {
+			log.Printf("Accrual system returned non-200 code: %d %s", resp.StatusCode, (body))
+			continue
+		}
+
 		if err != nil {
 			log.Printf("Error while reading accrual system's response: %v", err)
 			continue
@@ -54,7 +61,6 @@ func Worker(
 		err = json.Unmarshal(body, &data)
 		if err != nil {
 			log.Printf("Error while unmarshalling accrual system's response: %v", err)
-			log.Printf("Response: %d %s", resp.StatusCode, (body))
 			continue
 		}
 
