@@ -17,7 +17,7 @@ import (
 
 type orderResponse struct {
 	Order   string           `json:"order"`
-	Status  string           `json:"order"`
+	Status  string           `json:"status"`
 	Accrual *decimal.Decimal `json:"accrual"`
 }
 

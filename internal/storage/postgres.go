@@ -426,7 +426,7 @@ func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum 
 	}
 
 	if status != core.NEW || status != core.PROCESSED || status != core.INVALID || status != core.PROCESSED {
-		return fmt.Errorf("invalid order status: %v", status)
+		return fmt.Errorf("invalid order status: %s", status)
 	}
 
 	tx, err := store.db.Begin()
