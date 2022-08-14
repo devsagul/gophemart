@@ -58,12 +58,13 @@ func main() {
 		for range t.C {
 			orders, err := store.ExtractUnterminatedOrders()
 			if err != nil {
-				// todo log
+				log.Printf("Error while extracting unterminated orders: %v", err)
 				continue
 			}
 			for _, order := range orders {
 				select {
 				case accrualStream <- order:
+					log.Printf("Adding order to process: %s", order.Id)
 				default:
 				}
 			}
