@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const KEY_LENGTH = 64
-const KEY_PERIOD = time.Duration(30 * 24 * time.Hour)
-const KEY_REFRESH_PERIOD = time.Duration(6 * time.Hour)
-const TOKEN_PERIOD = time.Duration(3 * time.Hour)
+const KeyLength = 64
+const KeyPeriod = time.Duration(30 * 24 * time.Hour)
+const KeyRefreshPeriod = time.Duration(6 * time.Hour)
+const TokenPeriod = time.Duration(3 * time.Hour)
 
 type ErrExpiredToken struct {
 	expiredAt time.Time
@@ -42,18 +42,18 @@ func (key *HmacKey) Expired() bool {
 }
 
 func (key *HmacKey) Fresh() bool {
-	return time.Now().Before(key.ExpiresAt.Add(-4 * KEY_REFRESH_PERIOD))
+	return time.Now().Before(key.ExpiresAt.Add(-4 * KeyRefreshPeriod))
 }
 
 func NewKey() (*HmacKey, error) {
-	expiresAt := time.Now().Add(KEY_PERIOD)
+	expiresAt := time.Now().Add(KeyPeriod)
 	key := new(HmacKey)
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
 	key.Id = id
-	sign, err := utils.GenerateRandomBytes(KEY_LENGTH)
+	sign, err := utils.GenerateRandomBytes(KeyLength)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (claims JwtClaims) Valid() error {
 
 func GenerateToken(user *User, key *HmacKey) (string, error) {
 	now := time.Now()
-	expiration := now.Add(time.Duration(TOKEN_PERIOD))
+	expiration := now.Add(time.Duration(TokenPeriod))
 
 	claims := JwtClaims{
 		user.Id,

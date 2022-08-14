@@ -4,6 +4,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,6 +20,14 @@ const (
 	PROCESSED  = "PROCESSED"
 )
 
+type ErrInvalidOrder struct {
+	orderId string
+}
+
+func (err *ErrInvalidOrder) Error() string {
+	return fmt.Sprintf("invalid order number: %s", err.orderId)
+}
+
 var ERR_INVALID_ORDER = errors.New("invalid order id")
 
 type Order struct {
@@ -31,7 +40,7 @@ type Order struct {
 
 func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
 	if len(id) == 0 {
-		return nil, ERR_INVALID_ORDER
+		return nil, &ErrInvalidOrder{id}
 	}
 
 	sum := 0
@@ -39,7 +48,7 @@ func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
 
 	for i, character := range id {
 		if character < '0' || character > '9' {
-			return nil, ERR_INVALID_ORDER
+			return nil, &ErrInvalidOrder{id}
 		}
 		digit := int(character - '0')
 		if i%2 == odd {
@@ -52,7 +61,7 @@ func NewOrder(id string, user *User, uploadedAt time.Time) (*Order, error) {
 	}
 
 	if sum%10 != 0 {
-		return nil, ERR_INVALID_ORDER
+		return nil, &ErrInvalidOrder{id}
 	}
 
 	return &Order{

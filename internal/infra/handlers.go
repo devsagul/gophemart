@@ -2,7 +2,6 @@ package infra
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -116,13 +115,15 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
 	orderId := string(body)
 
 	order, err := core.NewOrder(orderId, user, time.Now())
-	if errors.Is(err, core.ERR_INVALID_ORDER) {
+	switch err.(type) {
+	case *core.ErrInvalidOrder:
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return nil
-	}
-	if err != nil {
+	case nil:
+	default:
 		return err
 	}
+
 	err = app.store.CreateOrder(order)
 	switch err.(type) {
 	case *storage.ErrOrderExists:
