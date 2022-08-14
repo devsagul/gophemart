@@ -63,15 +63,12 @@ func main() {
 				continue
 			}
 
-			log.Printf("Collected %dyy orders", len(orders))
+			log.Printf("Collected %d orders", len(orders))
 
 			for _, order := range orders {
 
 				log.Printf("Adding order to process: %s", order.Id)
-				select {
-				case accrualStream <- order:
-				default:
-				}
+				accrualStream <- order
 			}
 		}
 	}()
