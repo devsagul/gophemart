@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"time"
 
 	"github.com/devsagul/gophemart/internal/core"
 	"github.com/devsagul/gophemart/internal/storage"
@@ -34,7 +33,6 @@ func Worker(
 	}
 
 	for order := range orders {
-		time.Sleep(time.Second)
 		// todo manage frequency
 		apiUrl := *originalApiUrl
 
