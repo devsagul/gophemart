@@ -253,6 +253,7 @@ func (store *postgresStorage) ExtractUser(login string) (*core.User, error) {
 
 	return nil, &ErrUserNotFound{login}
 }
+
 func (store *postgresStorage) ExtractUserById(id uuid.UUID) (*core.User, error) {
 	query, err := store.db.Prepare("SELECT id, login, password_hash, balance from app_user WHERE id = $1")
 	if err != nil {
@@ -362,6 +363,7 @@ func (store *postgresStorage) CreateWithdrawal(withdrawal *core.Withdrawal, orde
 	err = tx.Commit()
 	return err
 }
+
 func (store *postgresStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core.Withdrawal, error) {
 	var withdrawals []*core.Withdrawal
 
@@ -392,6 +394,7 @@ func (store *postgresStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core
 
 	return withdrawals, nil
 }
+
 func (store *postgresStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, error) {
 	query, err := store.db.Prepare("SELECT COALESCE(SUM(withdrawal_sum), 0) FROM withdrawal INNER JOIN app_order ON withdrawal.order_id = app_order.id WHERE app_order.user_id = $1")
 	if err != nil {

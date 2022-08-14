@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/devsagul/gophemart/internal/core"
@@ -9,6 +10,8 @@ import (
 )
 
 type Storage interface {
+	Ping(context.Context) error
+	WithContext(context.Context) Storage
 	// auth
 	CreateKey(*core.HmacKey) error
 	ExtractKey(uuid.UUID) (*core.HmacKey, error)
