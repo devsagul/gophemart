@@ -447,6 +447,8 @@ func (store *postgresStorage) TotalWithdrawnSum(user *core.User) (decimal.Decima
 }
 
 func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum *decimal.Decimal) error {
+	log.Printf("Postgres process accrual 1 %s", orderId)
+
 	if status == "REGISTERED" {
 		status = core.NEW
 	}
@@ -468,6 +470,7 @@ func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum 
 		return err
 	}
 
+	log.Printf("Postgres process accrual 2 %s", orderId)
 	query, err := tx.Prepare("UPDATE app_order SET status = $2 WHERE id = $1 AND status != $3 AND status != $4")
 	if err != nil {
 		return err
@@ -483,8 +486,10 @@ func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum 
 	if n != 1 {
 		return fmt.Errorf("expected one row to be affected, got %d", n)
 	}
+	log.Printf("Postgres process accrual 3 %s", orderId)
 
 	if sum != nil {
+		log.Printf("Postgres process accrual 4 %s", orderId)
 		query, err = tx.Prepare("UPDATE app_order SET accrual = $2 WHERE id = $1")
 		if err != nil {
 			return err
@@ -518,7 +523,10 @@ func (store *postgresStorage) ProcessAccrual(orderId string, status string, sum 
 		if n != 1 {
 			return fmt.Errorf("expected one row to be affected, got %d", n)
 		}
+		log.Printf("Postgres process accrual 5 %s", orderId)
 	}
+
+	log.Printf("Postgres process accrual 6 %s", orderId)
 
 	return tx.Commit()
 }
