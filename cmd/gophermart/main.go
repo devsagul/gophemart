@@ -56,7 +56,7 @@ func main() {
 
 	app := infra.NewApp(store, accrualStream)
 	err = app.HydrateKeys()
-	// todo gorouting for keys hydration
+	// todo goroutine for keys hydration
 	if err != nil {
 		log.Fatalf("Could not hydrate the keys: %v")
 	}
