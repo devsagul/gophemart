@@ -54,7 +54,7 @@ func main() {
 	accrualStream := make(chan *core.Order, ORDERS_BUFFER_SIZE)
 
 	go func() {
-		t := time.NewTicker(5 * time.Second)
+		t := time.NewTicker(time.Minute)
 		for range t.C {
 			log.Print("Tick")
 			orders, err := store.ExtractUnterminatedOrders()
