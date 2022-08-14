@@ -148,6 +148,7 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
+	time.Sleep(20 * time.Second)
 	user := auth(w, r)
 	if user == nil {
 		return nil
