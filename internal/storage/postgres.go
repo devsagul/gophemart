@@ -179,10 +179,20 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 	for rows.Next() {
 
 		var order core.Order
-		err = rows.Scan(&order.ID, &order.Status, &order.UserID, &order.UploadedAt, order.Accrual)
+
+		var accrual decimal.NullDecimal
+
+		err = rows.Scan(&order.ID, &order.Status, &order.UserID, &order.UploadedAt, &accrual)
 		if err != nil {
 			return nil, err
 		}
+
+		if accrual.Valid {
+			order.Accrual = &accrual.Decimal
+		} else {
+			order.Accrual = nil
+		}
+
 		order.UploadedAt = order.UploadedAt.Local()
 		orders = append(orders, &order)
 	}
