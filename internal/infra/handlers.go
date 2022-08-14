@@ -42,7 +42,6 @@ func (app *App) registerUser(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	// todo perform login action
 	err = app.login(user, w)
 	if err != nil {
 		return err

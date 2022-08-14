@@ -183,9 +183,6 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 		if err != nil {
 			return nil, err
 		}
-		if *order.Accrual == decimal.Zero {
-			order.Accrual = nil
-		}
 		order.UploadedAt = order.UploadedAt.Local()
 		orders = append(orders, &order)
 	}
