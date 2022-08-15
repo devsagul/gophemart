@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
+	"time"
 
 	"github.com/devsagul/gophemart/internal/core"
 	"github.com/devsagul/gophemart/internal/storage"
@@ -32,7 +34,6 @@ func Worker(
 	}
 
 	for order := range orders {
-		// todo manage frequency
 		apiURL := *originalAPIURL
 
 		apiURL.Path = path.Join(originalAPIURL.Path, fmt.Sprintf("/api/orders/%s", order.ID))
@@ -53,7 +54,19 @@ func Worker(
 			log.Printf("Could not close response body: %v", err)
 			continue
 		}
-		if resp.StatusCode != 200 {
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			retryAfter := resp.Header.Get("Retry-After")
+			retrySeconds, err := strconv.Atoi(retryAfter)
+			if err != nil {
+				log.Printf("Error while processing retrry-after header: %v", err)
+				time.Sleep(time.Minute)
+			}
+			time.Sleep(time.Duration(retrySeconds) * time.Second)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
 			log.Printf("Accrual system returned non-200 code: %d %s", resp.StatusCode, (body))
 			continue
 		}
