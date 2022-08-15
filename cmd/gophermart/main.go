@@ -14,6 +14,7 @@ import (
 
 const OrdersBufferSize = 255
 const PollInterval = 30 * time.Second
+const DatabaseHealthCheckInterval = time.Minute
 
 type config struct {
 	Address        string `env:"RUN_ADDRESS"`
@@ -38,8 +39,17 @@ func main() {
 	flag.Parse()
 
 	log.Println("Initializing storage...")
-	// todo goroutine to ping database
 	var store storage.Storage
+
+	go func() {
+		t := time.NewTicker(PollInterval)
+		for range t.C {
+			err := store.Ping()
+			if err != nil {
+				log.Printf("Error while checking health of the database: %v", err)
+			}
+		}
+	}()
 
 	if cfg.DatabaseDsn == "" {
 		store = storage.NewMemStorage()
