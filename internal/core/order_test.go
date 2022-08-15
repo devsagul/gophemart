@@ -20,6 +20,9 @@ func TestOrder(t *testing.T) {
 		if order == nil {
 			assert.FailNow(t, "valid order creation returned nil as an order")
 		}
+		if !assert.NotNil(t, order) {
+			return
+		}
 		assert.Equal(t, NEW, order.Status)
 	})
 

@@ -34,6 +34,7 @@ func Worker(
 
 	for order := range orders {
 		// todo manage frequency
+		// todo remove extra logging
 		apiURL := *originalAPIURL
 
 		apiURL.Path = path.Join(originalAPIURL.Path, fmt.Sprintf("/api/orders/%s", order.ID))
@@ -45,6 +46,11 @@ func Worker(
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("Error while reading accrual system's response: %v", err)
+			continue
+		}
+
 		err = resp.Body.Close()
 		if err != nil {
 			log.Printf("Could not close response body: %v", err)
@@ -55,11 +61,6 @@ func Worker(
 			continue
 		}
 		log.Printf("Response form accrual system: %d %s", resp.StatusCode, (body))
-
-		if err != nil {
-			log.Printf("Error while reading accrual system's response: %v", err)
-			continue
-		}
 
 		var data orderResponse
 		err = json.Unmarshal(body, &data)
