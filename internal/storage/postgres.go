@@ -55,6 +55,10 @@ func (store *postgresStorage) ExtractKey(id uuid.UUID) (*core.HmacKey, error) {
 			return &key, nil
 		}
 	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, &ErrKeyNotFound{id}
 }
@@ -82,6 +86,10 @@ func (store *postgresStorage) ExtractRandomKey() (*core.HmacKey, error) {
 			return &key, nil
 		}
 	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, &ErrNoKeys{}
 }
@@ -108,6 +116,10 @@ func (store *postgresStorage) ExtractAllKeys() (map[uuid.UUID]core.HmacKey, erro
 			return nil, err
 		}
 		keys[key.ID] = key
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	return keys, nil
@@ -196,6 +208,10 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 		order.UploadedAt = order.UploadedAt.Local()
 		orders = append(orders, &order)
 	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 
 	return orders, nil
 }
@@ -221,6 +237,10 @@ func (store *postgresStorage) ExtractUnterminatedOrders() ([]*core.Order, error)
 		}
 		order.UploadedAt = order.UploadedAt.Local()
 		orders = append(orders, &order)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	return orders, nil
@@ -254,6 +274,10 @@ func (store *postgresStorage) CreateUser(user *core.User) error {
 
 	for rows.Next() {
 		return &ErrConflictingUserLogin{user.Login}
+	}
+	err = rows.Err()
+	if err != nil {
+		return err
 	}
 
 	putQuery, err := tx.Prepare("INSERT INTO app_user(id, login, password_hash, balance) VALUES($1, $2, $3, $4)")
@@ -428,6 +452,10 @@ func (store *postgresStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core
 		withdrawal.ProcessedAt = withdrawal.ProcessedAt.Local()
 
 		withdrawals = append(withdrawals, &withdrawal)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	return withdrawals, nil
