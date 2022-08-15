@@ -9,7 +9,7 @@ import (
 
 func auth(w http.ResponseWriter, r *http.Request) *core.User {
 	ctx := r.Context()
-	rawUser := ctx.Value("user")
+	rawUser := ctx.Value(UserKey)
 	user, ok := rawUser.(*core.User)
 	if !ok {
 		user = nil

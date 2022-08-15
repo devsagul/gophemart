@@ -31,6 +31,10 @@ type App struct {
 	accrualStream chan<- *core.Order
 }
 
+type userKey string
+
+const UserKey = userKey("user")
+
 func (app *App) newHandler(h Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		errChan := make(chan error)
@@ -42,7 +46,7 @@ func (app *App) newHandler(h Handler) http.HandlerFunc {
 				errChan <- err
 				return
 			}
-			r := r.WithContext(context.WithValue(ctx, "user", user))
+			r := r.WithContext(context.WithValue(ctx, UserKey, user))
 			errChan <- h(w, r)
 		}()
 

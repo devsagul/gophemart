@@ -408,6 +408,10 @@ func TestCreateOrder(t *testing.T) {
 			if !assert.NoError(err) {
 				return
 			}
+			err = res.Body.Close()
+			if !assert.NoError(err) {
+				return
+			}
 
 			assert.Equal(tCase.expectedCode, res.StatusCode)
 		})
