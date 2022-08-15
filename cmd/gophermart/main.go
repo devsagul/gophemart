@@ -13,6 +13,7 @@ import (
 )
 
 const OrdersBufferSize = 255
+const PollInterval = 30 * time.Second
 
 type config struct {
 	Address        string `env:"RUN_ADDRESS"`
@@ -53,20 +54,15 @@ func main() {
 	accrualStream := make(chan *core.Order, OrdersBufferSize)
 
 	go func() {
-		t := time.NewTicker(30 * time.Second)
+		t := time.NewTicker(PollInterval)
 		for range t.C {
-			log.Print("Tick")
 			orders, err := store.ExtractUnterminatedOrders()
 			if err != nil {
 				log.Printf("Error while extracting unterminated orders: %v", err)
 				continue
 			}
 
-			log.Printf("Collected %d orders", len(orders))
-
 			for _, order := range orders {
-
-				log.Printf("Adding order to process: %s", order.ID)
 				accrualStream <- order
 			}
 		}

@@ -387,7 +387,6 @@ func (store *postgresStorage) CreateWithdrawal(withdrawal *core.Withdrawal, orde
 
 	selectQuery, err := tx.PrepareContext(store.ctx, "SELECT app_user.balance FROM app_user WHERE id = $1 FOR UPDATE")
 	if err != nil {
-		log.Printf("select %v", err)
 		return err
 	}
 
@@ -412,7 +411,6 @@ func (store *postgresStorage) CreateWithdrawal(withdrawal *core.Withdrawal, orde
 
 	updateQuery, err := tx.PrepareContext(store.ctx, "UPDATE app_user SET balance = $1 WHERE id = $2")
 	if err != nil {
-		log.Printf("update %v", err)
 		return err
 	}
 	_, err = updateQuery.ExecContext(store.ctx, balance.Sub(withdrawal.Sum), order.UserID)

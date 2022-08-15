@@ -27,18 +27,15 @@ func Worker(
 ) error {
 	originalAPIURL, err := url.Parse(apiAddress)
 
-	log.Printf("Original api url: %s", originalAPIURL.String())
 	if err != nil {
 		return err
 	}
 
 	for order := range orders {
 		// todo manage frequency
-		// todo remove extra logging
 		apiURL := *originalAPIURL
 
 		apiURL.Path = path.Join(originalAPIURL.Path, fmt.Sprintf("/api/orders/%s", order.ID))
-		log.Printf("Getting order info from %s", apiURL.String())
 		resp, err := http.Get(apiURL.String())
 		if err != nil {
 			log.Printf("Error during orders processing: %v", err)
@@ -60,7 +57,6 @@ func Worker(
 			log.Printf("Accrual system returned non-200 code: %d %s", resp.StatusCode, (body))
 			continue
 		}
-		log.Printf("Response form accrual system: %d %s", resp.StatusCode, (body))
 
 		var data orderResponse
 		err = json.Unmarshal(body, &data)
