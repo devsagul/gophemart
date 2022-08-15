@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 const OrdersBufferSize = 255
 const PollInterval = 30 * time.Second
 const DatabaseHealthCheckInterval = time.Minute
+const HidrationInterval = 12 * time.Hour
 
 type config struct {
 	Address        string `env:"RUN_ADDRESS"`
@@ -44,7 +46,7 @@ func main() {
 	go func() {
 		t := time.NewTicker(PollInterval)
 		for range t.C {
-			err := store.Ping()
+			err := store.Ping(context.Background())
 			if err != nil {
 				log.Printf("Error while checking health of the database: %v", err)
 			}
@@ -84,10 +86,19 @@ func main() {
 
 	app := infra.NewApp(store, accrualStream)
 	err = app.HydrateKeys()
-	// todo goroutine for keys hydration
 	if err != nil {
 		log.Fatalf("Could not hydrate the keys: %v", err)
 	}
+
+	go func() {
+		t := time.NewTicker(PollInterval)
+		for range t.C {
+			err = app.HydrateKeys()
+			if err != nil {
+				log.Printf("Error while hydrating hmac keys: %v", err)
+			}
+		}
+	}()
 
 	err = http.ListenAndServe(cfg.Address, app.Router)
 	if err != nil {
