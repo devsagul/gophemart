@@ -15,7 +15,6 @@ type Withdrawal struct {
 }
 
 func NewWithdrawal(order *Order, sum decimal.Decimal, processedAt time.Time) (*Withdrawal, error) {
-	// TODO check if order is nil
 	withdrawal := new(Withdrawal)
 	id, err := uuid.NewRandom()
 	if err != nil {

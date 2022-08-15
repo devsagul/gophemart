@@ -98,7 +98,6 @@ func (store *memStorage) CreateOrder(order *core.Order) error {
 }
 
 func (store *memStorage) ExtractOrdersByUser(user *core.User) ([]*core.Order, error) {
-	// TODO Add test
 	userID := user.ID
 	res := []*core.Order{}
 

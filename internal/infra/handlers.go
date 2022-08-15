@@ -33,7 +33,7 @@ func (app *App) registerUser(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	err = app.store.CreateUser(user)
+	err = app.store.WithContext(r.Context()).CreateUser(user)
 	switch err.(type) {
 	case *storage.ErrConflictingUserLogin:
 		w.WriteHeader(http.StatusConflict)
@@ -67,7 +67,7 @@ func (app *App) loginUser(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	user, err := app.store.ExtractUser(data.Login)
+	user, err := app.store.WithContext(r.Context()).ExtractUser(data.Login)
 
 	switch err.(type) {
 	case nil:
@@ -123,7 +123,7 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	err = app.store.CreateOrder(order)
+	err = app.store.WithContext(r.Context()).CreateOrder(order)
 	switch err.(type) {
 	case *storage.ErrOrderExists:
 		w.WriteHeader(http.StatusOK)
@@ -151,7 +151,7 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	orders, err := app.store.ExtractOrdersByUser(user)
+	orders, err := app.store.WithContext(r.Context()).ExtractOrdersByUser(user)
 
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func (app *App) getBalance(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	witdrawn, err := app.store.TotalWithdrawnSum(user)
+	witdrawn, err := app.store.WithContext(r.Context()).TotalWithdrawnSum(user)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	err = app.store.CreateWithdrawal(withdrawal, order)
+	err = app.store.WithContext(r.Context()).CreateWithdrawal(withdrawal, order)
 
 	switch err.(type) {
 	case nil:
@@ -264,7 +264,7 @@ func (app *App) listWithdrawals(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	withdrawals, err := app.store.ExtractWithdrawalsByUser(user)
+	withdrawals, err := app.store.WithContext(r.Context()).ExtractWithdrawalsByUser(user)
 	if err != nil {
 		return err
 	}
