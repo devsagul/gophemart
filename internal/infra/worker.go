@@ -45,6 +45,11 @@ func Worker(
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
+		err = resp.Body.Close()
+		if err != nil {
+			log.Printf("Could not close response body: %v", err)
+			continue
+		}
 		if resp.StatusCode != 200 {
 			log.Printf("Accrual system returned non-200 code: %d %s", resp.StatusCode, (body))
 			continue

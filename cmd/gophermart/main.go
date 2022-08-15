@@ -12,7 +12,7 @@ import (
 	"github.com/devsagul/gophemart/internal/storage"
 )
 
-const ORDERS_BUFFER_SIZE = 255
+const OrdersBufferSize = 255
 
 type config struct {
 	Address        string `env:"RUN_ADDRESS"`
@@ -29,7 +29,6 @@ func init() {
 }
 
 func main() {
-	// todo add accrual poller
 	err := env.Parse(&cfg)
 	if err != nil {
 		log.Fatalf("Could not parse config for environment: %v", err)
@@ -51,7 +50,7 @@ func main() {
 	}
 
 	log.Println("Initializing application...")
-	accrualStream := make(chan *core.Order, ORDERS_BUFFER_SIZE)
+	accrualStream := make(chan *core.Order, OrdersBufferSize)
 
 	go func() {
 		t := time.NewTicker(30 * time.Second)
