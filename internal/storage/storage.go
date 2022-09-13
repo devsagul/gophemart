@@ -9,28 +9,43 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type Storage interface {
-	Ping(context.Context) error
-	WithContext(context.Context) Storage
-	// auth
+type AuthStorage interface {
 	CreateKey(*core.HmacKey) error
 	ExtractKey(uuid.UUID) (*core.HmacKey, error)
 	ExtractRandomKey() (*core.HmacKey, error)
 	ExtractAllKeys() (map[uuid.UUID]core.HmacKey, error)
-	// orders
+}
+
+type OrdersStorage interface {
 	CreateOrder(*core.Order) error
 	ExtractOrdersByUser(*core.User) ([]*core.Order, error)
 	ExtractUnterminatedOrders() ([]*core.Order, error)
-	// users
+}
+
+type UsersStorage interface {
 	CreateUser(*core.User) error
 	ExtractUser(string) (*core.User, error)
 	ExtractUserByID(uuid.UUID) (*core.User, error)
-	// withdrawals
+}
+
+type WithdrawalsStorage interface {
 	CreateWithdrawal(*core.Withdrawal, *core.Order) error
 	ExtractWithdrawalsByUser(*core.User) ([]*core.Withdrawal, error)
 	TotalWithdrawnSum(*core.User) (decimal.Decimal, error)
-	// accrual
+}
+
+type AccrualStorage interface {
 	ProcessAccrual(orderID string, status string, sum *decimal.Decimal) error
+}
+
+type Storage interface {
+	Ping(context.Context) error
+	WithContext(context.Context) Storage
+	AuthStorage
+	OrdersStorage
+	UsersStorage
+	WithdrawalsStorage
+	AccrualStorage
 }
 
 // errors
