@@ -1,0 +1,30 @@
+package core
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestUser(t *testing.T) {
+	t.Parallel()
+	t.Run("create a user and check their password", func(t *testing.T) {
+		user, err := NewUser("alice", "sikret")
+		if err != nil {
+			assert.FailNow(t, "could not create a user")
+		}
+
+		valid, err := user.ValidatePassword("sikret")
+		if err != nil {
+			assert.FailNow(t, "could not validate password")
+		}
+		assert.True(t, valid)
+		assert.NotNil(t, user)
+
+		valid, err = user.ValidatePassword("qwerty")
+		if err != nil {
+			assert.FailNow(t, "could not validate password")
+		}
+		assert.False(t, valid)
+	})
+}
