@@ -11,7 +11,46 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func (app *App) registerUser(w http.ResponseWriter, r *http.Request) error {
+// @Title Gophemart API
+// @Description Service for registering and processing orders.
+// @Version 1.0
+
+// @Contact.email dev.sagul@gmail.com
+
+// @BasePath /api
+// @Host devsagul.github.io:8080
+
+// @SecurityDefinitions.apikey ApiKeyAuth
+// @In header
+// @Name authorization
+
+// @Tag.name Auth
+// @Tag.description "Authentication related stuff"
+
+// @Tag.name User
+// @Tag.description "Group for general user-related endpoints"
+
+// @Tag.name Orders
+// @Tag.description "Group for orders-related endpoints"
+
+// @Tag.name Withdrawals
+// @Tag.description "Group for withdrawals-related endpoints"
+
+// RegisterUser godoc
+// @Tags Auth
+// @Summary Request a user registration
+// @Description Request a user registration with particular login and password
+// @ID authRegisterUser
+// @Accept  json
+// @Produce json
+// @Param login body string true "Login"
+// @Param password body string true "Password"
+// @Success 200 {empty}
+// @Failure 409 {string} string "Conflicting user logins"
+// @Failure 400 {string} string "Bad request"
+// @Failure 500 {string} string "Internal server error"
+// @Router /user/register [post]
+func (app *App) RegisterUser(w http.ResponseWriter, r *http.Request) error {
 	var data userRegisterRequest
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -50,7 +89,21 @@ func (app *App) registerUser(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (app *App) loginUser(w http.ResponseWriter, r *http.Request) error {
+// LoginUser godoc
+// @Tags Auth
+// @Summary Request a user login
+// @Description Request a user login with particular login and password
+// @ID authLoginUser
+// @Accept  json
+// @Produce json
+// @Param login body string true "Login"
+// @Param password body string true "Password"
+// @Success 200 {empty}
+// @Failure 401 {string} string "Password or login is incorrect"
+// @Failure 400 {string} string "Bad request"
+// @Failure 500 {string} string "Internal server error"
+// @Router /user/login [post]
+func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) error {
 	var data userLoginRequest
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -96,7 +149,21 @@ func (app *App) loginUser(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
+// CreateOrder godoc
+// @Tags Orders
+// @Summary Request order creation
+// @Description Request an order creation with particular id
+// @ID orderCreateOrder
+// @Accept  text
+// @Produce json
+// @Param id body string true "Order id"
+// @Success 202 {empty}
+// @Failure 401 {string} string "Not authenticated"
+// @Failure 400 {string} string "Bad request"
+// @Failure 500 {string} string "Internal server error"
+// @Security ApiKeyAuth
+// @Router /user/orders [post]
+func (app *App) CreateOrder(w http.ResponseWriter, r *http.Request) error {
 	user := auth(w, r)
 	if user == nil {
 		return nil
@@ -145,7 +212,20 @@ func (app *App) createOrder(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
+// ListOrder godoc
+// @Tags Orders
+// @Summary Get all the orders
+// @Description Get all the orders for current user
+// @ID orderListOrder
+// @Accept  json
+// @Produce json
+// @Success 200 {list} core.Order
+// @Failure 204 {empty}
+// @Failure 401 {string} string "Not authenticated"
+// @Failure 500 {string} string "Internal server error"
+// @Security ApiKeyAuth
+// @Router /user/orders [get]
+func (app *App) ListOrders(w http.ResponseWriter, r *http.Request) error {
 	user := auth(w, r)
 	if user == nil {
 		return nil
@@ -169,7 +249,27 @@ func (app *App) listOrders(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (app *App) getBalance(w http.ResponseWriter, r *http.Request) error {
+// Get balance response
+type BalanceResponse struct {
+	// Current balance
+	Current decimal.Decimal `json:"current"`
+	// Total withdrawn amount
+	Withdrawn decimal.Decimal `json:"withdrawn"`
+}
+
+// GetBalance godoc
+// @Tags User
+// @Summary Get the balance
+// @Description Get the balance of the current user
+// @ID userGetBalance
+// @Accept  json
+// @Produce json
+// @Success 200 {object} BalanceResponse
+// @Failure 401 {string} string "Not authenticated"
+// @Failure 500 {string} string "Internal server error"
+// @Security ApiKeyAuth
+// @Router /user/balance [get]
+func (app *App) GetBalance(w http.ResponseWriter, r *http.Request) error {
 	user := auth(w, r)
 	if user == nil {
 		return nil
@@ -180,12 +280,7 @@ func (app *App) getBalance(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	type balanceResponse struct {
-		Current   decimal.Decimal `json:"current"`
-		Withdrawn decimal.Decimal `json:"withdrawn"`
-	}
-
-	data := balanceResponse{
+	data := BalanceResponse{
 		user.Balance,
 		witdrawn,
 	}
@@ -198,13 +293,30 @@ func (app *App) getBalance(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) error {
+// CreateWithdrawal godoc
+// @Tags Withdrawals
+// @Summary Request withdrawal creation
+// @Description Request withdrawal creation for concrete order of given user
+// @ID userCreateWithdrawal
+// @Accept  json
+// @Produce json
+// @Param order body string true "Order id"
+// @Param sum body number true "Withdrawal sum"
+// @Success 200 {empty}
+// @Failure 400 {string} string "Bad request"
+// @Failure 401 {string} string "Not authenticated"
+// @Failure 402 {string} string "User's balance exceeded"
+// @Failure 422 {string} string "Unprocessable entity"
+// @Failure 500 {string} string "Internal server error"
+// @Security ApiKeyAuth
+// @Router /user/balance/withdraw [post]
+func (app *App) CreateWithdrawal(w http.ResponseWriter, r *http.Request) error {
 	user := auth(w, r)
 	if user == nil {
 		return nil
 	}
 
-	var data WithdrawalRequest
+	var data withdrawalRequest
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err
@@ -258,7 +370,21 @@ func (app *App) createWithdrawal(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (app *App) listWithdrawals(w http.ResponseWriter, r *http.Request) error {
+// ListWithdrawals godoc
+// @Tags Withdrawals
+// @Summary Get withdrawals
+// @Description Get all withdrawals for current user
+// @ID userListWithdrawals
+// @Accept  json
+// @Produce json
+// @Success 200 {list} core.Withdrawal
+// @Success 204 {empty}
+// @Failure 401 {string} string "Not authenticated"
+// @Failure 402 {string} string "User's balance exceeded"
+// @Failure 500 {string} string "Internal server error"
+// @Security ApiKeyAuth
+// @Router /user/withdraws [get]
+func (app *App) ListWithdrawals(w http.ResponseWriter, r *http.Request) error {
 	user := auth(w, r)
 	if user == nil {
 		return nil

@@ -23,6 +23,7 @@ type memStorage struct {
 	withdrawals map[uuid.UUID]core.Withdrawal
 }
 
+// Persist new hmac key within the storage
 func (store *memStorage) CreateKey(key *core.HmacKey) error {
 	store.Lock()
 	defer store.Unlock()
@@ -31,6 +32,7 @@ func (store *memStorage) CreateKey(key *core.HmacKey) error {
 	return nil
 }
 
+// extract a key by id
 func (store *memStorage) ExtractKey(id uuid.UUID) (*core.HmacKey, error) {
 	store.RLock()
 	defer store.RUnlock()
@@ -42,6 +44,7 @@ func (store *memStorage) ExtractKey(id uuid.UUID) (*core.HmacKey, error) {
 	return &key, nil
 }
 
+// extract random valid fresh key (if any)
 func (store *memStorage) ExtractRandomKey() (*core.HmacKey, error) {
 	store.RLock()
 	defer store.RUnlock()
@@ -66,6 +69,7 @@ func (store *memStorage) ExtractRandomKey() (*core.HmacKey, error) {
 	return keys[i], nil
 }
 
+// extract all keys
 func (store *memStorage) ExtractAllKeys() (map[uuid.UUID]core.HmacKey, error) {
 	store.RLock()
 	defer store.RUnlock()
@@ -79,6 +83,7 @@ func (store *memStorage) ExtractAllKeys() (map[uuid.UUID]core.HmacKey, error) {
 	return keys, nil
 }
 
+// Persist new order item
 func (store *memStorage) CreateOrder(order *core.Order) error {
 	userID := order.UserID
 	orderID := order.ID
@@ -97,6 +102,7 @@ func (store *memStorage) CreateOrder(order *core.Order) error {
 	return nil
 }
 
+// Extract all orders by user
 func (store *memStorage) ExtractOrdersByUser(user *core.User) ([]*core.Order, error) {
 	userID := user.ID
 	res := []*core.Order{}
@@ -117,6 +123,7 @@ func (store *memStorage) ExtractOrdersByUser(user *core.User) ([]*core.Order, er
 	return res, nil
 }
 
+// Extract all unterminated orders for all users
 func (store *memStorage) ExtractUnterminatedOrders() ([]*core.Order, error) {
 	orders := []*core.Order{}
 	store.RLock()
@@ -131,6 +138,7 @@ func (store *memStorage) ExtractUnterminatedOrders() ([]*core.Order, error) {
 	return orders, nil
 }
 
+// Persist new user
 func (store *memStorage) CreateUser(user *core.User) error {
 	login := user.Login
 
@@ -145,6 +153,7 @@ func (store *memStorage) CreateUser(user *core.User) error {
 	return nil
 }
 
+// Extract user by login
 func (store *memStorage) ExtractUser(login string) (*core.User, error) {
 	store.RLock()
 	defer store.RUnlock()
@@ -157,6 +166,7 @@ func (store *memStorage) ExtractUser(login string) (*core.User, error) {
 	return &user, nil
 }
 
+// Extract user by id
 func (store *memStorage) ExtractUserByID(id uuid.UUID) (*core.User, error) {
 	store.RLock()
 	defer store.RUnlock()
@@ -177,6 +187,7 @@ func (store *memStorage) ExtractUserByID(id uuid.UUID) (*core.User, error) {
 	return user, nil
 }
 
+// Persist new withdrawal item
 func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *core.Order) error {
 	store.Lock()
 	defer store.Unlock()
@@ -216,6 +227,7 @@ func (store *memStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *co
 	return nil
 }
 
+// Extract withdrawals by user
 func (store *memStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core.Withdrawal, error) {
 	userOrders := make(map[string]bool)
 	res := []*core.Withdrawal{}
@@ -245,6 +257,7 @@ func (store *memStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core.With
 	return res, nil
 }
 
+// Calculate total withdrawn sum for user
 func (store *memStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, error) {
 	store.RLock()
 	defer store.RUnlock()
@@ -264,6 +277,7 @@ func (store *memStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, er
 	return withdrawn, nil
 }
 
+// Register new accrual within the storage
 func (store *memStorage) ProcessAccrual(orderID string, status string, sum *decimal.Decimal) error {
 	if status == "REGISTERED" {
 		status = core.NEW
@@ -308,15 +322,18 @@ func (store *memStorage) ProcessAccrual(orderID string, status string, sum *deci
 	return nil
 }
 
+// Checks if storage is awailable (trivial for in-memory storage)
 func (store *memStorage) Ping(context.Context) error {
 	return nil
 }
 
+// Constructs new storage object with given context
 func (store *memStorage) WithContext(context.Context) Storage {
 	return store
 }
 
-func NewMemStorage() Storage {
+// Create new in-memory storage
+func NewMemStorage() *memStorage {
 	store := new(memStorage)
 	store.keys = make(map[uuid.UUID]core.HmacKey)
 	store.orders = make(map[string]core.Order)

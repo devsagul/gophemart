@@ -1,3 +1,6 @@
+// Infra package incapsulates different things related to the http application,
+// mainly application itself and handlers, also different utils
+
 package infra
 
 import (
@@ -21,18 +24,23 @@ func init() {
 	decimal.MarshalJSONWithoutQuotes = true
 }
 
+// default number of keys to be created on hydration
 const NumKeysHydrated = 3
 
+// custom handler function type
 type Handler func(http.ResponseWriter, *http.Request) error
 
+// Application
 type App struct {
-	store         storage.Storage
+	// application router (http handler)
 	Router        *chi.Mux
+	store         storage.Storage
 	accrualStream chan<- *core.Order
 }
 
 type userKey string
 
+// context key for providing user
 const UserKey = userKey("user")
 
 func (app *App) newHandler(h Handler) http.HandlerFunc {
@@ -107,6 +115,7 @@ func (app *App) authenticate(r *http.Request) (*core.User, error) {
 	return user, nil
 }
 
+// Hidrate keys of the application (create new HMAC keys if needed)
 func (app *App) HydrateKeys() error {
 	_, err := app.store.ExtractRandomKey()
 	switch err.(type) {
@@ -145,6 +154,7 @@ func (app *App) login(user *core.User, w http.ResponseWriter) error {
 	return nil
 }
 
+// Create new application
 func NewApp(store storage.Storage, accrualStream chan<- *core.Order) *App {
 	app := new(App)
 	app.accrualStream = accrualStream

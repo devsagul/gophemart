@@ -19,6 +19,7 @@ type postgresStorage struct {
 	ctx context.Context
 }
 
+// Persist new hmac key within the storage
 func (store *postgresStorage) CreateKey(key *core.HmacKey) error {
 	putQuery, err := store.db.Prepare("INSERT INTO hmac_key(id, sign, expires_at) VALUES($1, $2, $3)")
 	if err != nil {
@@ -28,6 +29,7 @@ func (store *postgresStorage) CreateKey(key *core.HmacKey) error {
 	return err
 }
 
+// extract a key by id
 func (store *postgresStorage) ExtractKey(id uuid.UUID) (*core.HmacKey, error) {
 	now := time.Now()
 
@@ -60,6 +62,8 @@ func (store *postgresStorage) ExtractKey(id uuid.UUID) (*core.HmacKey, error) {
 
 	return nil, &ErrKeyNotFound{id}
 }
+
+// extract random valid fresh key (if any)
 func (store *postgresStorage) ExtractRandomKey() (*core.HmacKey, error) {
 	now := time.Now()
 
@@ -92,6 +96,7 @@ func (store *postgresStorage) ExtractRandomKey() (*core.HmacKey, error) {
 	return nil, &ErrNoKeys{}
 }
 
+// extract all keys
 func (store *postgresStorage) ExtractAllKeys() (map[uuid.UUID]core.HmacKey, error) {
 	keys := make(map[uuid.UUID]core.HmacKey)
 	now := time.Now()
@@ -124,6 +129,8 @@ func (store *postgresStorage) ExtractAllKeys() (map[uuid.UUID]core.HmacKey, erro
 }
 
 // orders
+
+// Persist new order item
 func (store *postgresStorage) CreateOrder(order *core.Order) error {
 	tx, err := store.db.BeginTx(store.ctx, nil)
 	defer func() {
@@ -172,6 +179,7 @@ func (store *postgresStorage) CreateOrder(order *core.Order) error {
 	return tx.Commit()
 }
 
+// Extract all orders by user
 func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Order, error) {
 	userID := user.ID
 	orders := []*core.Order{}
@@ -214,6 +222,7 @@ func (store *postgresStorage) ExtractOrdersByUser(user *core.User) ([]*core.Orde
 	return orders, nil
 }
 
+// Extract all unterminated orders for all users
 func (store *postgresStorage) ExtractUnterminatedOrders() ([]*core.Order, error) {
 	orders := []*core.Order{}
 	query, err := store.db.PrepareContext(store.ctx, "SELECT id, status, user_id, uploaded_at from app_order WHERE status != $1 AND status != $2 ORDER BY uploaded_at")
@@ -245,6 +254,8 @@ func (store *postgresStorage) ExtractUnterminatedOrders() ([]*core.Order, error)
 }
 
 // users
+
+// Persist new user
 func (store *postgresStorage) CreateUser(user *core.User) error {
 	// we have to check on application error so as not to parse psql error
 	tx, err := store.db.BeginTx(store.ctx, nil)
@@ -290,6 +301,7 @@ func (store *postgresStorage) CreateUser(user *core.User) error {
 	return err
 }
 
+// Extract user by login
 func (store *postgresStorage) ExtractUser(login string) (*core.User, error) {
 	query, err := store.db.PrepareContext(store.ctx, "SELECT id, login, password_hash, balance from app_user WHERE login = $1")
 	if err != nil {
@@ -314,6 +326,7 @@ func (store *postgresStorage) ExtractUser(login string) (*core.User, error) {
 	return &user, nil
 }
 
+// Extract user by id
 func (store *postgresStorage) ExtractUserByID(id uuid.UUID) (*core.User, error) {
 	query, err := store.db.PrepareContext(store.ctx, "SELECT id, login, password_hash, balance from app_user WHERE id = $1")
 	if err != nil {
@@ -339,6 +352,8 @@ func (store *postgresStorage) ExtractUserByID(id uuid.UUID) (*core.User, error) 
 }
 
 // withdrawals
+
+// Persist new withdrawal item
 func (store *postgresStorage) CreateWithdrawal(withdrawal *core.Withdrawal, order *core.Order) error {
 	tx, err := store.db.BeginTx(store.ctx, nil)
 	defer func() {
@@ -422,6 +437,7 @@ func (store *postgresStorage) CreateWithdrawal(withdrawal *core.Withdrawal, orde
 	return err
 }
 
+// Extract withdrawals by user
 func (store *postgresStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core.Withdrawal, error) {
 	var withdrawals []*core.Withdrawal
 
@@ -457,6 +473,7 @@ func (store *postgresStorage) ExtractWithdrawalsByUser(user *core.User) ([]*core
 	return withdrawals, nil
 }
 
+// Calculate total withdrawn sum for user
 func (store *postgresStorage) TotalWithdrawnSum(user *core.User) (decimal.Decimal, error) {
 	query, err := store.db.PrepareContext(store.ctx, "SELECT COALESCE(SUM(withdrawal_sum), 0) FROM withdrawal INNER JOIN app_order ON withdrawal.order_id = app_order.id WHERE app_order.user_id = $1")
 	if err != nil {
@@ -481,6 +498,7 @@ func (store *postgresStorage) TotalWithdrawnSum(user *core.User) (decimal.Decima
 	return sum, nil
 }
 
+// Register new accrual within the storage
 func (store *postgresStorage) ProcessAccrual(orderID string, status string, sum *decimal.Decimal) error {
 	if status == "REGISTERED" {
 		status = core.NEW
@@ -556,17 +574,20 @@ func (store *postgresStorage) ProcessAccrual(orderID string, status string, sum 
 	return tx.Commit()
 }
 
+// Checks if storage is awailable
 func (store *postgresStorage) Ping(ctx context.Context) error {
 	return store.db.PingContext(ctx)
 }
 
+// Constructs new storage object with given context
 func (store *postgresStorage) WithContext(ctx context.Context) Storage {
 	newStore := *store
 	newStore.ctx = ctx
 	return &newStore
 }
 
-func NewPostgresStorage(dsn string) (Storage, error) {
+// Create new postgres storage with given DSN
+func NewPostgresStorage(dsn string) (*postgresStorage, error) {
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err

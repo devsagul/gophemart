@@ -1,3 +1,5 @@
+// Auth contains different utils related to authentication and authorization
+
 package core
 
 import (
@@ -10,41 +12,61 @@ import (
 	"github.com/google/uuid"
 )
 
+// Length of the key (in bytes)
 const KeyLength = 64
+
+// Secret key lifespan
 const KeyPeriod = time.Duration(30 * 24 * time.Hour)
+
+// Timespan in which key has to be refreshed prior to its spoilage
 const KeyRefreshPeriod = time.Duration(6 * time.Hour)
+
+// Lifespan of a token
 const TokenPeriod = time.Duration(3 * time.Hour)
 
+// Error: token is expired
 type ErrExpiredToken struct {
 	expiredAt time.Time
 }
 
+// Formats ErrExpiredToken
 func (err *ErrExpiredToken) Error() string {
 	return fmt.Sprintf("token had expired at: %s", err.expiredAt)
 }
 
+// Error: signing method is unexpected (differs from HS256)
 type ErrUnexpectedSigningMethod struct {
 	signingMethod jwt.SigningMethod
 }
 
+// Formats ErrUnexpectedSigningMethod
 func (err *ErrUnexpectedSigningMethod) Error() string {
 	return fmt.Sprintf("unexpected signing method: %s. HS256 expected", err.signingMethod.Alg())
 }
 
+// Secret HMAC key
 type HmacKey struct {
-	ID        uuid.UUID
-	Sign      []byte
+	// Key ID
+	ID uuid.UUID
+
+	// Key body (bytes)
+	Sign []byte
+
+	// Key's expiration datetime
 	ExpiresAt time.Time
 }
 
+// Checks if secret key is expired
 func (key *HmacKey) Expired() bool {
 	return key.ExpiresAt.Before(time.Now())
 }
 
+// Check if secret key is fresh -> can be used to sign new tokens
 func (key *HmacKey) Fresh() bool {
 	return time.Now().Before(key.ExpiresAt.Add(-4 * KeyRefreshPeriod))
 }
 
+// Create new secret key
 func NewKey() (*HmacKey, error) {
 	expiresAt := time.Now().Add(KeyPeriod)
 	key := new(HmacKey)
@@ -62,8 +84,12 @@ func NewKey() (*HmacKey, error) {
 	return key, nil
 }
 
+// Custom JWT claims used in application
 type JwtClaims struct {
+	// User ID
 	UserID uuid.UUID `json:"user,omitempty"`
+
+	// default claims
 	jwt.RegisteredClaims
 }
 

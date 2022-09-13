@@ -22,6 +22,7 @@ type orderResponse struct {
 	Accrual *decimal.Decimal `json:"accrual"`
 }
 
+// worker co-routine to process orders from given channel
 func Worker(
 	orders <-chan *core.Order,
 	apiAddress string,
