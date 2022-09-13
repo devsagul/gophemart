@@ -24,15 +24,13 @@ type config struct {
 	AccrualAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
 }
 
-var cfg config
+func main() {
+	var cfg config
 
-func init() {
 	flag.StringVar(&cfg.Address, "a", "localhost:8000", "Address of the server (to listen to)")
 	flag.StringVar(&cfg.DatabaseDsn, "d", "", "DSN to connect to the database (leave empty to use in-memory DB)")
 	flag.StringVar(&cfg.AccrualAddress, "r", "", "Address of the accrual system")
-}
 
-func main() {
 	err := env.Parse(&cfg)
 	if err != nil {
 		log.Fatalf("Could not parse config for environment: %v", err)
