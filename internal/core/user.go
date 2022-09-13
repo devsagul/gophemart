@@ -73,9 +73,9 @@ type passwordHash struct {
 
 func generatePasswordHash(pasword string) (string, error) {
 	p := &passwordGenerationParams{
-		64 * 1024,
-		3,
-		2,
+		8 * 1024,
+		6,
+		16,
 		16,
 		32,
 	}

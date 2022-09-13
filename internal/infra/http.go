@@ -1,3 +1,6 @@
+// Infra package incapsulates different things related to the http application,
+// mainly application itself and handlers, also different utils
+
 package infra
 
 import (
@@ -21,18 +24,23 @@ func init() {
 	decimal.MarshalJSONWithoutQuotes = true
 }
 
+// default number of keys to be created on hydration
 const NumKeysHydrated = 3
 
+// custom handler function type
 type Handler func(http.ResponseWriter, *http.Request) error
 
+// Application
 type App struct {
-	store         storage.Storage
+	// application router (http handler)
 	Router        *chi.Mux
+	store         storage.Storage
 	accrualStream chan<- *core.Order
 }
 
 type userKey string
 
+// context key for providing user
 const UserKey = userKey("user")
 
 func (app *App) newHandler(h Handler) http.HandlerFunc {
@@ -107,6 +115,7 @@ func (app *App) authenticate(r *http.Request) (*core.User, error) {
 	return user, nil
 }
 
+// Hidrate keys of the application (create new HMAC keys if needed)
 func (app *App) HydrateKeys() error {
 	_, err := app.store.ExtractRandomKey()
 	switch err.(type) {
@@ -145,6 +154,7 @@ func (app *App) login(user *core.User, w http.ResponseWriter) error {
 	return nil
 }
 
+// Create new application
 func NewApp(store storage.Storage, accrualStream chan<- *core.Order) *App {
 	app := new(App)
 	app.accrualStream = accrualStream
@@ -159,13 +169,13 @@ func NewApp(store storage.Storage, accrualStream chan<- *core.Order) *App {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Compress(5))
 
-	r.Post("/api/user/register", app.newHandler(app.registerUser))
-	r.Post("/api/user/login", app.newHandler(app.loginUser))
-	r.Post("/api/user/orders", app.newHandler(app.createOrder))
-	r.Get("/api/user/orders", app.newHandler(app.listOrders))
-	r.Get("/api/user/balance", app.newHandler(app.getBalance))
-	r.Post("/api/user/balance/withdraw", app.newHandler(app.createWithdrawal))
-	r.Get("/api/user/withdrawals", app.newHandler(app.listWithdrawals))
+	r.Post("/api/user/register", app.newHandler(app.RegisterUser))
+	r.Post("/api/user/login", app.newHandler(app.LoginUser))
+	r.Post("/api/user/orders", app.newHandler(app.CreateOrder))
+	r.Get("/api/user/orders", app.newHandler(app.ListOrders))
+	r.Get("/api/user/balance", app.newHandler(app.GetBalance))
+	r.Post("/api/user/balance/withdraw", app.newHandler(app.CreateWithdrawal))
+	r.Get("/api/user/withdrawals", app.newHandler(app.ListWithdrawals))
 
 	return app
 }

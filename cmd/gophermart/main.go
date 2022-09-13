@@ -1,3 +1,5 @@
+// This package implements an HTTP-server to run the gophemart application
+
 package main
 
 import (
@@ -19,8 +21,14 @@ const DatabaseHealthCheckInterval = time.Minute
 const HidrationInterval = 12 * time.Hour
 
 type config struct {
-	Address        string `env:"RUN_ADDRESS"`
-	DatabaseDsn    string `env:"DATABASE_URI"`
+	// Address of the server (to listen to)
+	Address string `env:"RUN_ADDRESS"`
+
+	// DSN (connection specification) for the postgres database; can be set to an empty string
+	// to use in-memory database
+	DatabaseDsn string `env:"DATABASE_URI"`
+
+	// Address of the Accrual system API
 	AccrualAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
 }
 

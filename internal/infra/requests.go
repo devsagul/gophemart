@@ -9,7 +9,7 @@ type userRegisterRequest struct {
 
 type userLoginRequest userRegisterRequest
 
-type WithdrawalRequest struct {
+type withdrawalRequest struct {
 	Order string          `json:"order"`
 	Sum   decimal.Decimal `json:"sum"`
 }
