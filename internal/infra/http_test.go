@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,13 +34,24 @@ func app(t *testing.T) (*App, *httptest.Server) {
 	return app, server
 }
 
+var usersCache = make(map[string]*core.User)
+var mutex sync.Mutex
+
 func alice(t *testing.T, app *App) (*core.User, string) {
 	assert := assert.New(t)
+	var err error
 
-	alice, err := core.NewUser("alice", "correct-horse")
-	if !assert.NoError(err) {
-		assert.FailNow("could not create alice")
+	mutex.Lock()
+	alice, found := usersCache["alice"]
+	if !found {
+		alice, err = core.NewUser("alice", "correct-horse")
+		if !assert.NoError(err) {
+			assert.FailNow("could not create alice")
+		}
+		usersCache["alice"] = alice
 	}
+	mutex.Unlock()
+
 	alice.Balance = decimal.New(1337, -2)
 	err = app.store.CreateUser(alice)
 	if !assert.NoError(err) {
@@ -62,11 +74,19 @@ func alice(t *testing.T, app *App) (*core.User, string) {
 
 func bob(t *testing.T, app *App) (*core.User, string) {
 	assert := assert.New(t)
+	var err error
 
-	bob, err := core.NewUser("bob", "sikret")
-	if !assert.NoError(err) {
-		assert.FailNow("could not create bob")
+	mutex.Lock()
+	bob, found := usersCache["bob"]
+	if !found {
+		bob, err = core.NewUser("bob", "sikret")
+		if !assert.NoError(err) {
+			assert.FailNow("could not create bob")
+		}
+		usersCache["bob"] = bob
 	}
+	mutex.Unlock()
+
 	bob.Balance = decimal.New(420, 0)
 	err = app.store.CreateUser(bob)
 	if !assert.NoError(err) {
