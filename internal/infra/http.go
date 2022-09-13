@@ -169,13 +169,13 @@ func NewApp(store storage.Storage, accrualStream chan<- *core.Order) *App {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Compress(5))
 
-	r.Post("/api/user/register", app.newHandler(app.registerUser))
-	r.Post("/api/user/login", app.newHandler(app.loginUser))
-	r.Post("/api/user/orders", app.newHandler(app.createOrder))
-	r.Get("/api/user/orders", app.newHandler(app.listOrders))
-	r.Get("/api/user/balance", app.newHandler(app.getBalance))
-	r.Post("/api/user/balance/withdraw", app.newHandler(app.createWithdrawal))
-	r.Get("/api/user/withdrawals", app.newHandler(app.listWithdrawals))
+	r.Post("/api/user/register", app.newHandler(app.RegisterUser))
+	r.Post("/api/user/login", app.newHandler(app.LoginUser))
+	r.Post("/api/user/orders", app.newHandler(app.CreateOrder))
+	r.Get("/api/user/orders", app.newHandler(app.ListOrders))
+	r.Get("/api/user/balance", app.newHandler(app.GetBalance))
+	r.Post("/api/user/balance/withdraw", app.newHandler(app.CreateWithdrawal))
+	r.Get("/api/user/withdrawals", app.newHandler(app.ListWithdrawals))
 
 	return app
 }
